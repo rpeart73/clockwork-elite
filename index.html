@@ -1101,11 +1101,14 @@
                 <div class="modal-body">
                     <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
                         <h4 style="margin-top: 0;">Quick Options:</h4>
-                        <button class="modal-btn modal-btn-primary" onclick="copyGitCommands()" style="margin-right: 10px;">
-                            📋 Copy Git Commands
+                        <button class="modal-btn modal-btn-primary" onclick="openTerminal()" style="margin-right: 10px;">
+                            🖥️ Open Terminal
                         </button>
-                        <button class="modal-btn modal-btn-secondary" onclick="openProjectFolder()">
-                            📁 Open Project Folder
+                        <button class="modal-btn modal-btn-primary" onclick="copyGitCommands()" style="margin-right: 10px;">
+                            📋 Copy Commands
+                        </button>
+                        <button class="modal-btn modal-btn-secondary" onclick="downloadTerminalScript()">
+                            💾 Download Script
                         </button>
                     </div>
                     
@@ -2110,6 +2113,100 @@ Mac:
 Or use the terminal commands in the Git Helper!`;
             
             alert(instructions);
+        }
+        
+        function openTerminal() {
+            const message = document.getElementById('commitMessage').value.trim() || 'Update Clockwork Elite';
+            
+            // Create a temporary batch file that opens terminal with commands
+            const batchContent = `@echo off
+cd /d "C:\\Users\\raymo\\projects\\clockwork-elite"
+echo.
+echo  ╔══════════════════════════════════════╗
+echo  ║   CLOCKWORK ELITE - READY TO PUSH   ║
+echo  ╚══════════════════════════════════════╝
+echo.
+echo Ready to push your changes!
+echo.
+echo Run these commands:
+echo   git add index.html
+echo   git commit -m "${message}"
+echo   git push
+echo.
+echo Or simply type: auto-push
+echo.
+cmd /k`;
+
+            // Create a data URL for download
+            const blob = new Blob([batchContent], { type: 'application/x-bat' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'push-clockwork.bat';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showStatus('Terminal script downloaded! Run it to open terminal.', 'success');
+            
+            // Also show instructions
+            setTimeout(() => {
+                alert('Terminal Helper Downloaded!\n\n1. Check your Downloads folder for "push-clockwork.bat"\n2. Double-click it to open terminal in the right folder\n3. The git commands will be displayed and ready to use!');
+            }, 500);
+        }
+        
+        function downloadTerminalScript() {
+            const message = document.getElementById('commitMessage').value.trim() || 'Update Clockwork Elite';
+            
+            // Create a more permanent script
+            const scriptContent = `@echo off
+:: Clockwork Elite Push Script
+:: Generated on ${new Date().toLocaleDateString()}
+
+cd /d "C:\\Users\\raymo\\projects\\clockwork-elite"
+
+echo.
+echo  ╔══════════════════════════════════════╗
+echo  ║      CLOCKWORK ELITE PUSH SCRIPT     ║
+echo  ╚══════════════════════════════════════╝
+echo.
+
+:: Show status
+echo 📊 Checking status...
+git status --short
+echo.
+
+:: Ask for confirmation
+set /p confirm=Push changes with message "${message}"? (y/n): 
+if /i not "%confirm%"=="y" exit /b
+
+:: Execute git commands
+echo.
+echo 📤 Adding files...
+git add index.html
+
+echo 💾 Committing...
+git commit -m "${message}
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+echo 🌐 Pushing to GitHub...
+git push
+
+echo.
+echo ✅ Complete! Check https://rpeart73.github.io/clockwork-elite/
+pause`;
+
+            const blob = new Blob([scriptContent], { type: 'application/x-bat' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `clockwork-push-${Date.now()}.bat`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showStatus('Push script downloaded!', 'success');
         }
         
         function resetAnalysis() {
