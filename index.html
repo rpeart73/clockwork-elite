@@ -2612,12 +2612,71 @@ pause`;
         }
         
         function showHelp() {
-            alert('Clockwork Elite v4.0\n\n' +
-                  '• Paste emails or type text to auto-detect content type\n' +
-                  '• Drag and drop files for document analysis\n' +
-                  '• Smart suggestions appear in real-time\n' +
-                  '• All entries are auto-saved\n' +
-                  '• Press ⚡ for quick generation');
+            const helpModal = document.createElement('div');
+            helpModal.className = 'output-modal active';
+            helpModal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">📚 Clockwork Elite Help & Documentation</h3>
+                        <button class="modal-close" onclick="this.closest('.output-modal').remove()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="display: grid; gap: 20px;">
+                            <div>
+                                <h4>⚡ Quick Start</h4>
+                                <ul style="line-height: 1.8;">
+                                    <li>Paste emails or type text to auto-detect content type</li>
+                                    <li>Smart suggestions appear in real-time</li>
+                                    <li>All entries are auto-saved</li>
+                                    <li>Original emails included in output</li>
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <h4>⌨️ Keyboard Shortcuts</h4>
+                                <ul style="line-height: 1.8;">
+                                    <li><kbd>Ctrl + Enter</kbd> - Generate Entry</li>
+                                    <li><kbd>Ctrl + S</kbd> - Save Output</li>
+                                    <li><kbd>Escape</kbd> - Close Modals</li>
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <h4>📖 Full Documentation</h4>
+                                <div style="display: grid; gap: 10px; margin-top: 10px;">
+                                    <a href="BEST_PRACTICES.md" target="_blank" class="modal-btn modal-btn-secondary" style="text-align: center; text-decoration: none;">
+                                        📋 Best Practices Guide
+                                    </a>
+                                    <a href="QUICK_REFERENCE.md" target="_blank" class="modal-btn modal-btn-secondary" style="text-align: center; text-decoration: none;">
+                                        ⚡ Quick Reference
+                                    </a>
+                                    <a href="CLAUDE.md" target="_blank" class="modal-btn modal-btn-secondary" style="text-align: center; text-decoration: none;">
+                                        🔧 Development Guide
+                                    </a>
+                                    <a href="https://github.com/rpeart73/clockwork-elite" target="_blank" class="modal-btn modal-btn-primary" style="text-align: center; text-decoration: none;">
+                                        🐙 View on GitHub
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #f3f4f6; padding: 16px; border-radius: 8px;">
+                                <strong>💡 Pro Tips:</strong>
+                                <ul style="margin-top: 8px; line-height: 1.8;">
+                                    <li>Include dates like "yesterday" or "Monday" for automatic POC detection</li>
+                                    <li>Enter only days actually worked for accurate task distribution</li>
+                                    <li>Use Natural Narrative style for professional case notes</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="modal-btn modal-btn-primary" onclick="this.closest('.output-modal').remove()">
+                            Got it!
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(helpModal);
         }
         
         function debounce(func, wait) {
