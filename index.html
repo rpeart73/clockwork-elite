@@ -1117,7 +1117,7 @@
                         
                         <div class="form-field" id="distributionField" style="display: none;">
                             <label class="form-label" for="distributionPattern">Work Distribution Pattern</label>
-                            <select id="distributionPattern" class="form-input">
+                            <select id="distributionPattern" class="form-input" onchange="updateGenerationPreview()">
                                 <option value="equal" selected>⚖️ Equal Distribution</option>
                                 <option value="frontLoaded">Front-Loaded (More work early)</option>
                                 <option value="ascending">Ascending (Gradual increase)</option>
@@ -1131,7 +1131,7 @@
                         
                         <div class="form-field" id="timeOfDayField" style="display: none;">
                             <label class="form-label" for="timeOfDay">Preferred Time of Day</label>
-                            <select id="timeOfDay" class="form-input">
+                            <select id="timeOfDay" class="form-input" onchange="updateGenerationPreview()">
                                 <option value="early_morning" selected>Early Morning (8:00 AM - 10:00 AM)</option>
                                 <option value="late_morning">Late Morning (10:00 AM - 12:00 PM)</option>
                                 <option value="early_afternoon">Early Afternoon (12:00 PM - 2:00 PM)</option>
@@ -1143,7 +1143,7 @@
                         
                         <div class="form-field" id="hoursPerDayField" style="display: none;">
                             <label class="form-label" for="hoursPerDay">Hours Per Day</label>
-                            <input type="number" id="hoursPerDay" class="form-input" value="5" min="1" max="12" step="0.5">
+                            <input type="number" id="hoursPerDay" class="form-input" value="5" min="1" max="12" step="0.5" onchange="updateGenerationPreview()">
                             <div style="margin-top: 4px; font-size: 12px; color: #6b7280;">
                                 Average hours worked per day
                             </div>
@@ -1211,7 +1211,7 @@
                                     <span class="preview-value" id="totalHours">0</span>
                                 </div>
                                 <div class="preview-item">
-                                    <span class="preview-label">Hours Per Day:</span>
+                                    <span class="preview-label">Average Hours Per Day:</span>
                                     <span class="preview-value" id="hoursPerDayPreview">0</span>
                                 </div>
                                 <div class="preview-item">
@@ -2808,6 +2808,7 @@ Note: For more detailed content analysis, please copy and paste specific text se
                 
                 document.getElementById('taskCount').textContent = actualTaskCount;
                 document.getElementById('totalHours').textContent = `${totalDays * hoursPerDay} hours`;
+                document.getElementById('hoursPerDayPreview').textContent = `${hoursPerDay} hours`;
                 
                 // Update date range preview
                 const startDate = document.getElementById('startDate').value;
