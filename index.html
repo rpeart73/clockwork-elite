@@ -2816,7 +2816,19 @@ Note: For more detailed content analysis, please copy and paste specific text se
                 if (startDate && endDate) {
                     document.getElementById('dateRangePreview').textContent = 
                         `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+                } else {
+                    document.getElementById('dateRangePreview').textContent = 'Not set';
                 }
+                
+                // Update distribution pattern preview
+                const distributionSelect = document.getElementById('distributionPattern');
+                const distributionText = distributionSelect.options[distributionSelect.selectedIndex].text.replace('⚖️ ', '');
+                document.getElementById('distributionPreview').textContent = distributionText || 'Equal Distribution';
+                
+                // Update time of day preview
+                const timeOfDaySelect = document.getElementById('timeOfDay');
+                const timeOfDayText = timeOfDaySelect.options[timeOfDaySelect.selectedIndex].text;
+                document.getElementById('timeOfDayPreview').textContent = timeOfDayText || 'Early Morning (8:00 AM - 10:00 AM)'
             } else {
                 preview.style.display = 'none';
             }
