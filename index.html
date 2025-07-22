@@ -143,7 +143,7 @@
         .content-area {
             display: grid;
             grid-template-columns: 1fr 400px;
-            min-height: 600px;
+            min-height: 800px;
         }
         
         @media (max-width: 1024px) {
@@ -298,8 +298,10 @@
         /* Real-time Analysis Panel */
         .analysis-panel {
             background: #f3f4f6;
-            padding: 30px;
+            padding: 30px 30px 120px 30px;
             position: relative;
+            overflow-y: auto;
+            height: 100%;
         }
         
         .analysis-header {
@@ -454,6 +456,13 @@
             bottom: 30px;
             left: 30px;
             right: 30px;
+            background: linear-gradient(to top, #f3f4f6 60%, rgba(243, 244, 246, 0) 100%);
+            padding-top: 40px;
+            pointer-events: none;
+        }
+        
+        .generate-section .generate-btn {
+            pointer-events: auto;
         }
         
         .generate-btn {
@@ -1606,7 +1615,7 @@
                 case WorkflowState.READY:
                     stateText.textContent = 'Ready to generate';
                     progressBar.style.width = '60%';
-                    generateBtn.textContent = 'Generate Entries';
+                    generateBtn.textContent = 'Generate Entry';
                     generateBtn.disabled = false;
                     quickGenBtn.style.display = 'block';
                     break;
@@ -1621,7 +1630,7 @@
                 case WorkflowState.COMPLETE:
                     stateText.textContent = 'Generation complete';
                     progressBar.style.width = '100%';
-                    generateBtn.textContent = 'Regenerate';
+                    generateBtn.textContent = 'Generate Entry';
                     generateBtn.disabled = false;
                     break;
             }
