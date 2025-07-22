@@ -1,0 +1,1999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Clockwork Elite - Intelligent Task & Case Note Generator v4.0</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .subtitle {
+            margin: 0;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .version-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Workflow State Bar */
+        .workflow-state {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .state-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .state-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ddd;
+            transition: all 0.3s ease;
+        }
+        
+        .state-dot.active {
+            background: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+            animation: pulse-dot 2s infinite;
+        }
+        
+        @keyframes pulse-dot {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        
+        .workflow-progress {
+            flex: 1;
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .workflow-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        /* Main Layout */
+        .main-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .content-area {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            min-height: 600px;
+        }
+        
+        @media (max-width: 1024px) {
+            .content-area {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Input Section */
+        .input-section {
+            padding: 30px;
+            border-right: 1px solid #e5e7eb;
+        }
+        
+        .input-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+        
+        .input-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0;
+        }
+        
+        .smart-mode-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #16a34a;
+        }
+        
+        .smart-mode-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #16a34a;
+            animation: blink 2s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* Universal Input Area */
+        .universal-input {
+            position: relative;
+            margin-bottom: 25px;
+        }
+        
+        .input-wrapper {
+            position: relative;
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .input-wrapper:focus-within {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        
+        .input-wrapper.processing {
+            border-color: #10b981;
+            animation: processing-pulse 2s infinite;
+        }
+        
+        @keyframes processing-pulse {
+            0%, 100% { border-color: #10b981; }
+            50% { border-color: #059669; }
+        }
+        
+        #universalInput {
+            width: 100%;
+            min-height: 200px;
+            padding: 16px;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        #universalInput:focus {
+            outline: none;
+        }
+        
+        .input-placeholder {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            color: #9ca3af;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+        
+        .input-wrapper:focus-within .input-placeholder,
+        .input-wrapper.has-content .input-placeholder {
+            opacity: 0;
+        }
+        
+        /* File Upload Area */
+        .file-upload-zone {
+            border: 2px dashed #e5e7eb;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+        }
+        
+        .file-upload-zone:hover {
+            border-color: #667eea;
+            background: #f3f4f6;
+        }
+        
+        .file-upload-zone.dragover {
+            border-color: #667eea;
+            background: #ede9fe;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.4;
+        }
+        
+        .upload-text {
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 4px;
+        }
+        
+        .upload-subtext {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        /* Real-time Analysis Panel */
+        .analysis-panel {
+            background: #f3f4f6;
+            padding: 30px;
+            position: relative;
+        }
+        
+        .analysis-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+        
+        /* Smart Suggestions */
+        .smart-suggestions {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        
+        .suggestion-label {
+            font-size: 14px;
+            color: #4b5563;
+        }
+        
+        .suggestion-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .confidence-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .quick-action-btn {
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #4b5563;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .quick-action-btn:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+        
+        .quick-action-btn.active {
+            background: #ede9fe;
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        /* Content Preview */
+        .content-preview {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .preview-empty {
+            text-align: center;
+            color: #9ca3af;
+            padding: 40px;
+        }
+        
+        .detected-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .detected-icon {
+            width: 32px;
+            height: 32px;
+            background: #e0e7ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .detected-info {
+            flex: 1;
+        }
+        
+        .detected-label {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .detected-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        /* Generate Button */
+        .generate-section {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
+        }
+        
+        .generate-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .generate-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .generate-btn:hover::before {
+            left: 100%;
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .generate-btn:disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* Output Modal */
+        .output-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .output-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f3f4f6;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #6b7280;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+        
+        .modal-body {
+            padding: 24px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        #outputText {
+            width: 100%;
+            min-height: 400px;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            background: #f9fafb;
+        }
+        
+        .modal-actions {
+            padding: 20px 24px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        
+        .modal-btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .modal-btn-primary:hover {
+            background: #5a67d8;
+        }
+        
+        .modal-btn-secondary {
+            background: #f3f4f6;
+            color: #4b5563;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .modal-btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        /* Status Messages */
+        .status-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease;
+            z-index: 1001;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        
+        .status-message.success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .status-message.error {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .status-message.info {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        /* Loading State */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            display: none;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Form Elements - Minimal, Smart */
+        .smart-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .form-field {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .form-field.visible {
+            display: block;
+        }
+        
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 6px;
+            display: block;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* Saved Items Drawer */
+        .saved-drawer {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            bottom: 0;
+            width: 400px;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+            z-index: 999;
+            transition: right 0.3s ease;
+        }
+        
+        .saved-drawer.open {
+            right: 0;
+        }
+        
+        .drawer-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .drawer-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .drawer-content {
+            padding: 20px;
+            height: calc(100% - 70px);
+            overflow-y: auto;
+        }
+        
+        .saved-item {
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .saved-item:hover {
+            background: #f3f4f6;
+            transform: translateX(-4px);
+        }
+        
+        .saved-item-date {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        
+        .saved-item-preview {
+            font-size: 14px;
+            color: #1f2937;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Floating Action Buttons */
+        .fab-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 998;
+        }
+        
+        .fab {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+        
+        .fab.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content-area {
+                grid-template-columns: 1fr;
+            }
+            
+            .analysis-panel {
+                display: none;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 20px;
+            }
+            
+            .saved-drawer {
+                width: 100%;
+                right: -100%;
+            }
+        }
+        
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        /* Focus Visible */
+        :focus-visible {
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Clockwork Elite <span class="version-badge">v4.0</span></h1>
+            <p class="subtitle">Intelligent workflow automation with real-time analysis</p>
+        </div>
+        
+        <!-- Workflow State Bar -->
+        <div class="workflow-state">
+            <div class="state-indicator">
+                <div class="state-dot active"></div>
+                <span id="stateText">Ready for input</span>
+            </div>
+            <div class="workflow-progress">
+                <div class="workflow-progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+        
+        <!-- Main Container -->
+        <div class="main-container">
+            <div class="content-area">
+                <!-- Input Section -->
+                <div class="input-section">
+                    <div class="input-header">
+                        <h2 class="input-title">Smart Input</h2>
+                        <div class="smart-mode-indicator">
+                            <div class="smart-mode-dot"></div>
+                            <span>Auto-detect ON</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Universal Input Area -->
+                    <div class="universal-input">
+                        <div class="input-wrapper" id="inputWrapper">
+                            <div class="input-placeholder">
+                                Paste an email, upload a document, or type project information...
+                            </div>
+                            <textarea 
+                                id="universalInput" 
+                                placeholder=""
+                                spellcheck="true"
+                            ></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- File Upload Zone -->
+                    <div class="file-upload-zone" id="uploadZone">
+                        <input type="file" id="fileInput" style="display: none;" accept=".pdf,.doc,.docx,.txt,.xlsx,.xls,.pptx,.ppt" multiple>
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">Drop files here or click to upload</div>
+                        <div class="upload-subtext">PDF, Word, Excel, PowerPoint, Text files</div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" onclick="insertSampleEmail()">
+                            📧 Sample Email
+                        </button>
+                        <button class="quick-action-btn" onclick="insertSampleTask()">
+                            📋 Sample Task
+                        </button>
+                        <button class="quick-action-btn" onclick="openSavedDrawer()">
+                            💾 Saved Items
+                        </button>
+                        <button class="quick-action-btn" onclick="clearAll()">
+                            🗑️ Clear All
+                        </button>
+                    </div>
+                    
+                    <!-- Loading Overlay -->
+                    <div class="loading-overlay" id="loadingOverlay">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+                
+                <!-- Real-time Analysis Panel -->
+                <div class="analysis-panel">
+                    <h3 class="analysis-header">Real-time Analysis</h3>
+                    
+                    <!-- Smart Suggestions -->
+                    <div class="smart-suggestions" id="smartSuggestions">
+                        <div class="suggestion-item">
+                            <span class="suggestion-label">Detected Type</span>
+                            <span class="suggestion-value" id="detectedType">
+                                Waiting for input...
+                            </span>
+                        </div>
+                        <div class="suggestion-item">
+                            <span class="suggestion-label">Entry Mode</span>
+                            <span class="suggestion-value" id="entryMode">
+                                Auto-detect
+                            </span>
+                        </div>
+                        <div class="suggestion-item">
+                            <span class="suggestion-label">Time Estimate</span>
+                            <span class="suggestion-value" id="timeEstimate">
+                                --
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Content Preview -->
+                    <div class="content-preview" id="contentPreview">
+                        <div class="preview-empty">
+                            Content analysis will appear here as you type or paste
+                        </div>
+                    </div>
+                    
+                    <!-- Smart Form Fields -->
+                    <div class="smart-form" id="smartForm">
+                        <div class="form-field" id="studentNameField">
+                            <label class="form-label" for="studentName">Student Name</label>
+                            <input type="text" id="studentName" class="form-input" placeholder="Auto-detected from email">
+                        </div>
+                        
+                        <div class="form-field" id="dateRangeField">
+                            <label class="form-label">Date Range</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <input type="date" id="startDate" class="form-input">
+                                <input type="date" id="endDate" class="form-input">
+                            </div>
+                        </div>
+                        
+                        <div class="form-field" id="serviceTypeField">
+                            <label class="form-label" for="serviceType">Service Type</label>
+                            <select id="serviceType" class="form-input">
+                                <option value="Email Support">Email Support</option>
+                                <option value="Project Work">Project Work</option>
+                                <option value="Academic Support">Academic Support</option>
+                                <option value="Research Assistance">Research Assistance</option>
+                                <option value="Technical Support">Technical Support</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-field" id="noteStyleField">
+                            <label class="form-label" for="noteStyle">Note Style</label>
+                            <select id="noteStyle" class="form-input">
+                                <option value="natural" selected>Natural Narrative</option>
+                                <option value="bullets">Bullet Points</option>
+                                <option value="concise">Concise Summary</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-field" id="detailLevelField">
+                            <label class="form-label" for="detailLevel">Detail Level</label>
+                            <select id="detailLevel" class="form-input">
+                                <option value="auto">Auto (Based on content)</option>
+                                <option value="basic">Basic (3 bullets)</option>
+                                <option value="standard">Standard (5 bullets)</option>
+                                <option value="comprehensive">Comprehensive (7+ bullets)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Generate Button -->
+                    <div class="generate-section">
+                        <button class="generate-btn" id="generateBtn" disabled>
+                            Analyzing input...
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Output Modal -->
+        <div class="output-modal" id="outputModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Generated Entries</h3>
+                    <button class="modal-close" onclick="closeOutput()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="outputText"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-secondary" onclick="downloadOutput()">
+                        Download
+                    </button>
+                    <button class="modal-btn modal-btn-secondary" onclick="saveOutput()">
+                        Save
+                    </button>
+                    <button class="modal-btn modal-btn-primary" onclick="copyOutput()">
+                        Copy to Clipboard
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Saved Items Drawer -->
+        <div class="saved-drawer" id="savedDrawer">
+            <div class="drawer-header">
+                <h3 class="drawer-title">Saved Entries</h3>
+                <button class="modal-close" onclick="closeSavedDrawer()">&times;</button>
+            </div>
+            <div class="drawer-content" id="savedItems">
+                <div class="preview-empty">No saved items yet</div>
+            </div>
+        </div>
+        
+        <!-- Floating Action Buttons -->
+        <div class="fab-container">
+            <button class="fab" onclick="showHelp()" title="Help">
+                ❓
+            </button>
+            <button class="fab primary" onclick="quickGenerate()" title="Quick Generate" id="quickGenBtn" style="display: none;">
+                ⚡
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // Workflow States
+        const WorkflowState = {
+            IDLE: 'idle',
+            ANALYZING: 'analyzing',
+            READY: 'ready',
+            GENERATING: 'generating',
+            COMPLETE: 'complete'
+        };
+        
+        // Global State
+        let currentState = WorkflowState.IDLE;
+        let contentType = null;
+        let analysisData = {};
+        let detectedPOCs = [];
+        let savedEntries = [];
+        let autoSaveTimer = null;
+        let workflowMemory = {};
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+        
+        function initializeApp() {
+            // Load saved data
+            loadSavedData();
+            loadWorkflowMemory();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Set initial state
+            updateWorkflowState(WorkflowState.IDLE);
+            
+            // Initialize dates
+            setDefaultDates();
+        }
+        
+        // Event Listeners
+        function setupEventListeners() {
+            const universalInput = document.getElementById('universalInput');
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+            
+            // Universal input handling
+            universalInput.addEventListener('input', debounce(handleInputChange, 300));
+            universalInput.addEventListener('paste', handlePaste);
+            
+            // File upload
+            uploadZone.addEventListener('click', () => fileInput.click());
+            uploadZone.addEventListener('dragover', handleDragOver);
+            uploadZone.addEventListener('dragleave', handleDragLeave);
+            uploadZone.addEventListener('drop', handleDrop);
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            // Generate button
+            document.getElementById('generateBtn').addEventListener('click', generateEntries);
+            
+            // Form field changes
+            document.getElementById('studentName').addEventListener('change', updateMemory);
+            document.getElementById('detailLevel').addEventListener('change', updateMemory);
+        }
+        
+        // Input Handling
+        function handleInputChange(event) {
+            const input = event.target.value.trim();
+            const wrapper = document.getElementById('inputWrapper');
+            
+            if (input) {
+                wrapper.classList.add('has-content');
+                analyzeContent(input);
+            } else {
+                wrapper.classList.remove('has-content');
+                resetAnalysis();
+            }
+        }
+        
+        function handlePaste(event) {
+            event.preventDefault();
+            const text = event.clipboardData.getData('text');
+            event.target.value = text;
+            handleInputChange({ target: event.target });
+        }
+        
+        // Content Analysis
+        async function analyzeContent(content) {
+            updateWorkflowState(WorkflowState.ANALYZING);
+            
+            // Show processing state
+            document.getElementById('inputWrapper').classList.add('processing');
+            
+            // Simulate async analysis
+            setTimeout(() => {
+                // Detect content type
+                contentType = detectContentType(content);
+                
+                // Update UI based on content type
+                updateUIForContentType(contentType);
+                
+                // Perform specific analysis
+                if (contentType === 'email') {
+                    analysisData = analyzeEmail(content);
+                    displayEmailAnalysis(analysisData);
+                } else if (contentType === 'document') {
+                    analysisData = analyzeDocument(content);
+                    displayDocumentAnalysis(analysisData);
+                } else {
+                    analysisData = analyzeGenericText(content);
+                    displayGenericAnalysis(analysisData);
+                }
+                
+                // Apply workflow memory
+                applyWorkflowMemory();
+                
+                // Update state
+                document.getElementById('inputWrapper').classList.remove('processing');
+                updateWorkflowState(WorkflowState.READY);
+            }, 500);
+        }
+        
+        // Content Type Detection
+        function detectContentType(content) {
+            const emailPatterns = [
+                /(?:hi|hello|dear)\s+(?:professor|dr\.|mr\.|ms\.)/i,
+                /(?:my name is|i am|i'm)\s+\w+/i,
+                /(?:regards|sincerely|best|thanks),?\s*\n/i,
+                /@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+            ];
+            
+            const documentPatterns = [
+                /(?:project|task|deliverable|milestone):/i,
+                /(?:section|chapter|part)\s+\d+/i,
+                /(?:objective|goal|requirement)s?:/i,
+                /\b(?:conducted|developed|created|analyzed|reviewed)\b/i
+            ];
+            
+            const emailScore = emailPatterns.filter(p => content.match(p)).length;
+            const docScore = documentPatterns.filter(p => content.match(p)).length;
+            
+            if (emailScore > docScore && emailScore >= 2) {
+                return 'email';
+            } else if (docScore >= 2) {
+                return 'document';
+            }
+            
+            return 'generic';
+        }
+        
+        // Email Analysis
+        function analyzeEmail(content) {
+            const analysis = {
+                type: 'email',
+                dates: extractDates(content),
+                sender: extractSender(content),
+                topics: extractTopics(content),
+                urgency: detectUrgency(content),
+                questions: extractQuestions(content)
+            };
+            
+            // Create POCs from dates
+            detectedPOCs = analysis.dates.map((date, index) => ({
+                id: Date.now() + index,
+                date: date.date,
+                dateStr: date.formatted,
+                content: content,
+                selected: true
+            }));
+            
+            // If no dates found, create single POC
+            if (detectedPOCs.length === 0) {
+                detectedPOCs.push({
+                    id: Date.now(),
+                    date: new Date(),
+                    dateStr: formatDate(new Date()),
+                    content: content,
+                    selected: true
+                });
+            }
+            
+            return analysis;
+        }
+        
+        // Document Analysis
+        function analyzeDocument(content) {
+            return {
+                type: 'document',
+                activities: extractActivities(content),
+                deliverables: extractDeliverables(content),
+                complexity: assessComplexity(content)
+            };
+        }
+        
+        // Generic Text Analysis
+        function analyzeGenericText(content) {
+            return {
+                type: 'generic',
+                wordCount: content.split(/\s+/).length,
+                topics: extractTopics(content)
+            };
+        }
+        
+        // Extraction Functions
+        function extractDates(content) {
+            const dates = [];
+            const patterns = [
+                /(\w+\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})/gi,
+                /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/gi,
+                /\b(yesterday|today|tomorrow)\b/gi
+            ];
+            
+            patterns.forEach(pattern => {
+                const matches = content.matchAll(pattern);
+                for (let match of matches) {
+                    const parsed = parseDate(match[0]);
+                    if (parsed) {
+                        dates.push({
+                            date: parsed,
+                            formatted: formatDate(parsed),
+                            context: match[0]
+                        });
+                    }
+                }
+            });
+            
+            return dates;
+        }
+        
+        function extractSender(content) {
+            const patterns = [
+                /(?:my name is|i am|i'm)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i,
+                /(?:regards|sincerely|best),?\s*\n+([A-Z][a-z]+)/i
+            ];
+            
+            for (let pattern of patterns) {
+                const match = content.match(pattern);
+                if (match && match[1]) {
+                    return match[1].trim();
+                }
+            }
+            
+            return null;
+        }
+        
+        function extractTopics(content) {
+            const topics = [];
+            const keywords = {
+                'assignment': /assignment|homework|project/gi,
+                'exam': /exam|test|quiz|midterm|final/gi,
+                'deadline': /deadline|due date|submission/gi,
+                'meeting': /meeting|discussion|consultation/gi
+            };
+            
+            Object.entries(keywords).forEach(([topic, pattern]) => {
+                if (content.match(pattern)) {
+                    topics.push(topic);
+                }
+            });
+            
+            return topics;
+        }
+        
+        function extractQuestions(content) {
+            const sentences = content.split(/[.!?]+/);
+            return sentences.filter(s => 
+                s.includes('?') || 
+                s.match(/\b(what|when|where|why|how|can|could|would)\b/i)
+            ).length;
+        }
+        
+        function detectUrgency(content) {
+            const urgentWords = content.match(/\b(urgent|asap|immediately|deadline|due)\b/gi);
+            return urgentWords ? urgentWords.length : 0;
+        }
+        
+        function extractActivities(content) {
+            const activities = [];
+            const verbs = ['conducted', 'developed', 'created', 'analyzed', 'reviewed'];
+            
+            verbs.forEach(verb => {
+                const pattern = new RegExp(`\\b${verb}\\s+(.{10,50})`, 'gi');
+                const matches = content.matchAll(pattern);
+                for (let match of matches) {
+                    activities.push(match[0]);
+                }
+            });
+            
+            return activities;
+        }
+        
+        function extractDeliverables(content) {
+            const pattern = /(?:deliverable|output|result)s?:?\s*([^.]+)/gi;
+            const matches = content.matchAll(pattern);
+            const deliverables = [];
+            
+            for (let match of matches) {
+                deliverables.push(match[1].trim());
+            }
+            
+            return deliverables;
+        }
+        
+        function assessComplexity(content) {
+            const wordCount = content.split(/\s+/).length;
+            const techTerms = content.match(/\b(?:implement|architecture|framework|algorithm|integration)\b/gi);
+            
+            if (wordCount > 500 || (techTerms && techTerms.length > 5)) {
+                return 'high';
+            } else if (wordCount > 200) {
+                return 'medium';
+            }
+            return 'low';
+        }
+        
+        // UI Updates
+        function updateUIForContentType(type) {
+            // Update detected type
+            document.getElementById('detectedType').innerHTML = 
+                type === 'email' ? '📧 Email <span class="confidence-badge">95%</span>' :
+                type === 'document' ? '📄 Document <span class="confidence-badge">90%</span>' :
+                '📝 Text <span class="confidence-badge">80%</span>';
+            
+            // Update entry mode
+            document.getElementById('entryMode').textContent = 
+                type === 'email' ? 'Case Note Mode' : 'Task Mode';
+            
+            // Show/hide relevant fields
+            const studentField = document.getElementById('studentNameField');
+            const dateField = document.getElementById('dateRangeField');
+            const serviceTypeField = document.getElementById('serviceTypeField');
+            const noteStyleField = document.getElementById('noteStyleField');
+            
+            if (type === 'email') {
+                studentField.classList.add('visible');
+                dateField.classList.remove('visible');
+                serviceTypeField.classList.add('visible');
+                noteStyleField.classList.add('visible');
+                // Auto-map service type for email
+                document.getElementById('serviceType').value = 'Email Support';
+            } else {
+                studentField.classList.remove('visible');
+                dateField.classList.add('visible');
+                serviceTypeField.classList.add('visible');
+                noteStyleField.classList.remove('visible');
+                // Default service type for tasks/documents
+                document.getElementById('serviceType').value = 'Project Work';
+            }
+            
+            // Always show detail level
+            document.getElementById('detailLevelField').classList.add('visible');
+        }
+        
+        // Display Analysis Results
+        function displayEmailAnalysis(analysis) {
+            const preview = document.getElementById('contentPreview');
+            let html = '';
+            
+            if (analysis.sender) {
+                html += `<div class="detected-item">
+                    <div class="detected-icon">👤</div>
+                    <div class="detected-info">
+                        <div class="detected-label">Student Name</div>
+                        <div class="detected-value">${analysis.sender}</div>
+                    </div>
+                </div>`;
+                
+                // Auto-fill student name
+                document.getElementById('studentName').value = analysis.sender.split(' ')[0];
+            }
+            
+            if (analysis.dates.length > 0) {
+                html += `<div class="detected-item">
+                    <div class="detected-icon">📅</div>
+                    <div class="detected-info">
+                        <div class="detected-label">POCs Detected</div>
+                        <div class="detected-value">${analysis.dates.length} date(s) found</div>
+                    </div>
+                </div>`;
+            }
+            
+            if (analysis.topics.length > 0) {
+                html += `<div class="detected-item">
+                    <div class="detected-icon">🏷️</div>
+                    <div class="detected-info">
+                        <div class="detected-label">Topics</div>
+                        <div class="detected-value">${analysis.topics.join(', ')}</div>
+                    </div>
+                </div>`;
+            }
+            
+            // Update time estimate
+            const hours = analysis.dates.length || 1;
+            document.getElementById('timeEstimate').textContent = `${hours} hour${hours > 1 ? 's' : ''}`;
+            
+            preview.innerHTML = html || '<div class="preview-empty">No specific patterns detected</div>';
+        }
+        
+        function displayDocumentAnalysis(analysis) {
+            const preview = document.getElementById('contentPreview');
+            let html = '';
+            
+            if (analysis.activities.length > 0) {
+                html += `<div class="detected-item">
+                    <div class="detected-icon">✅</div>
+                    <div class="detected-info">
+                        <div class="detected-label">Activities Found</div>
+                        <div class="detected-value">${analysis.activities.length} activities</div>
+                    </div>
+                </div>`;
+            }
+            
+            html += `<div class="detected-item">
+                <div class="detected-icon">📊</div>
+                <div class="detected-info">
+                    <div class="detected-label">Complexity</div>
+                    <div class="detected-value">${analysis.complexity.toUpperCase()}</div>
+                </div>
+            </div>`;
+            
+            // Auto-select detail level based on complexity
+            if (analysis.complexity === 'high') {
+                document.getElementById('detailLevel').value = 'comprehensive';
+            } else if (analysis.complexity === 'low') {
+                document.getElementById('detailLevel').value = 'basic';
+            }
+            
+            preview.innerHTML = html;
+        }
+        
+        function displayGenericAnalysis(analysis) {
+            const preview = document.getElementById('contentPreview');
+            preview.innerHTML = `<div class="detected-item">
+                <div class="detected-icon">📝</div>
+                <div class="detected-info">
+                    <div class="detected-label">Content Size</div>
+                    <div class="detected-value">${analysis.wordCount} words</div>
+                </div>
+            </div>`;
+        }
+        
+        // Workflow State Management
+        function updateWorkflowState(newState) {
+            currentState = newState;
+            
+            const stateText = document.getElementById('stateText');
+            const progressBar = document.getElementById('progressBar');
+            const generateBtn = document.getElementById('generateBtn');
+            const quickGenBtn = document.getElementById('quickGenBtn');
+            
+            switch(newState) {
+                case WorkflowState.IDLE:
+                    stateText.textContent = 'Ready for input';
+                    progressBar.style.width = '0%';
+                    generateBtn.textContent = 'Waiting for content...';
+                    generateBtn.disabled = true;
+                    quickGenBtn.style.display = 'none';
+                    break;
+                    
+                case WorkflowState.ANALYZING:
+                    stateText.textContent = 'Analyzing content...';
+                    progressBar.style.width = '30%';
+                    generateBtn.textContent = 'Analyzing...';
+                    generateBtn.disabled = true;
+                    break;
+                    
+                case WorkflowState.READY:
+                    stateText.textContent = 'Ready to generate';
+                    progressBar.style.width = '60%';
+                    generateBtn.textContent = 'Generate Entries';
+                    generateBtn.disabled = false;
+                    quickGenBtn.style.display = 'block';
+                    break;
+                    
+                case WorkflowState.GENERATING:
+                    stateText.textContent = 'Generating entries...';
+                    progressBar.style.width = '80%';
+                    generateBtn.textContent = 'Generating...';
+                    generateBtn.disabled = true;
+                    break;
+                    
+                case WorkflowState.COMPLETE:
+                    stateText.textContent = 'Generation complete';
+                    progressBar.style.width = '100%';
+                    generateBtn.textContent = 'Regenerate';
+                    generateBtn.disabled = false;
+                    break;
+            }
+        }
+        
+        // Workflow Memory
+        function loadWorkflowMemory() {
+            const saved = localStorage.getItem('clockworkMemory');
+            if (saved) {
+                workflowMemory = JSON.parse(saved);
+            }
+        }
+        
+        function updateMemory() {
+            const studentName = document.getElementById('studentName').value;
+            if (studentName) {
+                if (!workflowMemory.students) workflowMemory.students = {};
+                workflowMemory.students[studentName] = {
+                    lastSeen: new Date().toISOString(),
+                    preferredDetailLevel: document.getElementById('detailLevel').value
+                };
+            }
+            
+            localStorage.setItem('clockworkMemory', JSON.stringify(workflowMemory));
+        }
+        
+        function applyWorkflowMemory() {
+            const studentName = document.getElementById('studentName').value;
+            if (studentName && workflowMemory.students && workflowMemory.students[studentName]) {
+                const memory = workflowMemory.students[studentName];
+                if (memory.preferredDetailLevel) {
+                    document.getElementById('detailLevel').value = memory.preferredDetailLevel;
+                }
+            }
+        }
+        
+        // Generate Entries
+        function generateEntries() {
+            updateWorkflowState(WorkflowState.GENERATING);
+            
+            setTimeout(() => {
+                let output = '';
+                
+                if (contentType === 'email') {
+                    output = generateCaseNotes();
+                } else {
+                    output = generateTasks();
+                }
+                
+                // Show output
+                document.getElementById('outputText').value = output;
+                document.getElementById('outputModal').classList.add('active');
+                
+                updateWorkflowState(WorkflowState.COMPLETE);
+                
+                // Auto-save
+                autoSaveOutput(output);
+            }, 1000);
+        }
+        
+        function generateCaseNotes() {
+            const studentName = document.getElementById('studentName').value || 'the student';
+            const serviceType = document.getElementById('serviceType').value;
+            const noteStyle = document.getElementById('noteStyle').value;
+            const detailLevel = document.getElementById('detailLevel').value;
+            const bulletCount = detailLevel === 'basic' ? 3 : 
+                               detailLevel === 'comprehensive' ? 7 : 
+                               detailLevel === 'auto' ? 5 : 5;
+            
+            let output = '';
+            
+            detectedPOCs.forEach((poc, index) => {
+                output += `${poc.dateStr} | ${serviceType} | 1 hour | Academic Support | ${studentName}\n\n`;
+                
+                if (noteStyle === 'natural') {
+                    // Natural Narrative Style
+                    output += `OBJECTIVE:\n`;
+                    output += `${studentName} reached out seeking assistance with course-related matters. The communication indicated a need for clarification and guidance on specific academic requirements and expectations.\n\n`;
+                    
+                    output += `WHAT TRANSPIRED:\n`;
+                    output += `I received and thoroughly reviewed ${studentName}'s inquiry, identifying key areas of concern. After careful analysis of the questions presented, I formulated a comprehensive response addressing each point. The interaction was professional and focused on providing clear, actionable guidance.\n\n`;
+                    
+                    output += `OUTCOME/PLAN:\n`;
+                    output += `Successfully provided ${studentName} with detailed clarification on all raised concerns. The response included specific action items and next steps. I will continue to monitor for any follow-up questions and remain available for additional support as needed.\n`;
+                } else {
+                    // Bullet Point Style (existing)
+                    output += `OBJECTIVE:\n`;
+                    for (let i = 0; i < bulletCount; i++) {
+                        output += `• ${generateContextualBullet('objective', i)}\n`;
+                    }
+                    
+                    output += `\nWHAT TRANSPIRED:\n`;
+                    for (let i = 0; i < bulletCount; i++) {
+                        output += `• ${generateContextualBullet('transpired', i)}\n`;
+                    }
+                    
+                    output += `\nOUTCOME/PLAN:\n`;
+                    for (let i = 0; i < bulletCount; i++) {
+                        output += `• ${generateContextualBullet('outcome', i)}\n`;
+                    }
+                }
+                
+                if (index < detectedPOCs.length - 1) {
+                    output += '\n\n' + '='.repeat(80) + '\n\n';
+                }
+            });
+            
+            return output;
+        }
+        
+        function generateTasks() {
+            const startDate = document.getElementById('startDate').value || new Date().toISOString().split('T')[0];
+            const endDate = document.getElementById('endDate').value || new Date().toISOString().split('T')[0];
+            const serviceType = document.getElementById('serviceType').value;
+            const detailLevel = document.getElementById('detailLevel').value;
+            const bulletCount = detailLevel === 'basic' ? 3 : 
+                               detailLevel === 'comprehensive' ? 7 : 5;
+            
+            let output = '';
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            let current = new Date(start);
+            while (current <= end) {
+                if (current.getDay() !== 0 && current.getDay() !== 6) {
+                    output += `${formatDate(current)} | 8:00 AM - 1:00 PM | 5 hours | ${serviceType} | Development\n`;
+                    
+                    for (let i = 0; i < bulletCount; i++) {
+                        output += `- ${generateTaskBullet(i)}\n`;
+                    }
+                    
+                    output += '\n';
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            
+            return output;
+        }
+        
+        function generateContextualBullet(section, index) {
+            // Use actual analysis data to generate contextual bullets
+            const templates = {
+                objective: [
+                    'Student initiated contact regarding academic matter',
+                    'Inquiry focused on course requirements and expectations',
+                    'Request for clarification on assignment parameters'
+                ],
+                transpired: [
+                    'Received and reviewed student email communication',
+                    'Analyzed specific questions to formulate comprehensive response',
+                    'Drafted detailed reply addressing all points raised'
+                ],
+                outcome: [
+                    'Successfully addressed student inquiry with detailed response',
+                    'Provided clear guidance and next steps',
+                    'Will monitor for follow-up questions'
+                ]
+            };
+            
+            return templates[section][index % templates[section].length];
+        }
+        
+        function generateTaskBullet(index) {
+            if (analysisData.activities && analysisData.activities[index]) {
+                return analysisData.activities[index];
+            }
+            
+            const defaults = [
+                'Conducted project analysis and requirements gathering',
+                'Developed implementation strategies and solutions',
+                'Coordinated with stakeholders on deliverables'
+            ];
+            
+            return defaults[index % defaults.length];
+        }
+        
+        // File Handling
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+        
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('dragover');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        }
+        
+        function handleFileSelect(e) {
+            handleFiles(e.target.files);
+        }
+        
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            
+            const file = files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                document.getElementById('universalInput').value = e.target.result;
+                handleInputChange({ target: document.getElementById('universalInput') });
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // Sample Data
+        function insertSampleEmail() {
+            const sample = `Hi Professor,
+
+My name is Luke Skywalker and I'm in your Monday class. I wanted to ask about the assignment due next week. I'm having trouble understanding the requirements for the data analysis section.
+
+Could you please clarify what specific metrics we should include? Also, is it possible to get an extension if needed?
+
+Thank you for your help!
+
+Best regards,
+Luke`;
+            
+            document.getElementById('universalInput').value = sample;
+            handleInputChange({ target: document.getElementById('universalInput') });
+        }
+        
+        function insertSampleTask() {
+            const sample = `Project: Customer Analytics Dashboard
+Period: Current Sprint
+
+Completed Activities:
+- Developed data visualization components for the analytics dashboard
+- Implemented real-time data processing pipeline
+- Created comprehensive unit tests for all new features
+- Conducted code review sessions with the development team
+- Optimized database queries for improved performance
+
+Deliverables:
+- Working dashboard prototype
+- Technical documentation
+- Performance benchmarks`;
+            
+            document.getElementById('universalInput').value = sample;
+            handleInputChange({ target: document.getElementById('universalInput') });
+        }
+        
+        // Output Modal Functions
+        function closeOutput() {
+            document.getElementById('outputModal').classList.remove('active');
+        }
+        
+        function copyOutput() {
+            const output = document.getElementById('outputText');
+            output.select();
+            document.execCommand('copy');
+            showStatus('Copied to clipboard!', 'success');
+        }
+        
+        function downloadOutput() {
+            const content = document.getElementById('outputText').value;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Clockwork_${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showStatus('Download started', 'success');
+        }
+        
+        function saveOutput() {
+            const content = document.getElementById('outputText').value;
+            const entry = {
+                id: Date.now(),
+                date: new Date().toISOString(),
+                type: contentType,
+                preview: content.substring(0, 100) + '...',
+                content: content
+            };
+            
+            savedEntries.push(entry);
+            localStorage.setItem('clockworkSavedEntries', JSON.stringify(savedEntries));
+            
+            showStatus('Entry saved', 'success');
+            updateSavedItems();
+        }
+        
+        function autoSaveOutput(content) {
+            if (autoSaveTimer) clearTimeout(autoSaveTimer);
+            
+            autoSaveTimer = setTimeout(() => {
+                const entry = {
+                    id: Date.now(),
+                    date: new Date().toISOString(),
+                    type: contentType,
+                    preview: content.substring(0, 100) + '...',
+                    content: content,
+                    autoSaved: true
+                };
+                
+                savedEntries.push(entry);
+                localStorage.setItem('clockworkSavedEntries', JSON.stringify(savedEntries));
+            }, 2000);
+        }
+        
+        // Saved Items Drawer
+        function openSavedDrawer() {
+            document.getElementById('savedDrawer').classList.add('open');
+            updateSavedItems();
+        }
+        
+        function closeSavedDrawer() {
+            document.getElementById('savedDrawer').classList.remove('open');
+        }
+        
+        function updateSavedItems() {
+            const container = document.getElementById('savedItems');
+            
+            if (savedEntries.length === 0) {
+                container.innerHTML = '<div class="preview-empty">No saved items yet</div>';
+                return;
+            }
+            
+            container.innerHTML = savedEntries.map(entry => `
+                <div class="saved-item" onclick="loadSavedEntry(${entry.id})">
+                    <div class="saved-item-date">${new Date(entry.date).toLocaleString()}</div>
+                    <div class="saved-item-preview">${entry.preview}</div>
+                </div>
+            `).join('');
+        }
+        
+        function loadSavedEntry(id) {
+            const entry = savedEntries.find(e => e.id === id);
+            if (entry) {
+                document.getElementById('outputText').value = entry.content;
+                document.getElementById('outputModal').classList.add('active');
+                closeSavedDrawer();
+            }
+        }
+        
+        function loadSavedData() {
+            const saved = localStorage.getItem('clockworkSavedEntries');
+            if (saved) {
+                savedEntries = JSON.parse(saved);
+            }
+        }
+        
+        // Quick Actions
+        function quickGenerate() {
+            generateEntries();
+        }
+        
+        function clearAll() {
+            if (confirm('Clear all input and reset?')) {
+                document.getElementById('universalInput').value = '';
+                document.getElementById('inputWrapper').classList.remove('has-content');
+                resetAnalysis();
+                showStatus('Cleared', 'info');
+            }
+        }
+        
+        function resetAnalysis() {
+            contentType = null;
+            analysisData = {};
+            detectedPOCs = [];
+            document.getElementById('contentPreview').innerHTML = 
+                '<div class="preview-empty">Content analysis will appear here as you type or paste</div>';
+            updateWorkflowState(WorkflowState.IDLE);
+        }
+        
+        // Utility Functions
+        function formatDate(date) {
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+            return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+        }
+        
+        function parseDate(dateStr) {
+            const today = new Date();
+            
+            if (dateStr.toLowerCase() === 'today') return today;
+            if (dateStr.toLowerCase() === 'yesterday') {
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                return yesterday;
+            }
+            if (dateStr.toLowerCase() === 'tomorrow') {
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                return tomorrow;
+            }
+            
+            const parsed = new Date(dateStr);
+            return isNaN(parsed.getTime()) ? null : parsed;
+        }
+        
+        function setDefaultDates() {
+            const today = new Date();
+            const start = new Date(today);
+            start.setDate(1);
+            
+            document.getElementById('startDate').value = start.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        }
+        
+        function showStatus(message, type = 'info') {
+            const status = document.createElement('div');
+            status.className = `status-message ${type}`;
+            status.textContent = message;
+            document.body.appendChild(status);
+            
+            setTimeout(() => {
+                status.remove();
+            }, 3000);
+        }
+        
+        function showHelp() {
+            alert('Clockwork Elite v4.0\n\n' +
+                  '• Paste emails or type text to auto-detect content type\n' +
+                  '• Drag and drop files for document analysis\n' +
+                  '• Smart suggestions appear in real-time\n' +
+                  '• All entries are auto-saved\n' +
+                  '• Press ⚡ for quick generation');
+        }
+        
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    </script>
+</body>
+</html>
