@@ -2257,8 +2257,28 @@ Note: For more detailed content analysis, please copy and paste specific text se
         
         // Git Helper Functions
         function showGitHelper() {
-            updateGitCommands();
-            document.getElementById('gitModal').classList.add('active');
+            try {
+                const modal = document.getElementById('gitModal');
+                if (!modal) {
+                    console.error('Git modal not found');
+                    showStatus('Error: Git helper not available', 'error');
+                    return;
+                }
+                
+                modal.classList.add('active');
+                
+                // Reset commit message input
+                document.getElementById('commitMessage').value = '';
+                
+                // Update commands after modal is shown
+                setTimeout(() => {
+                    updateGitCommands();
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error showing git helper:', error);
+                showStatus('Error opening git helper', 'error');
+            }
         }
         
         function closeGitHelper() {
@@ -2269,7 +2289,8 @@ Note: For more detailed content analysis, please copy and paste specific text se
             const commitInput = document.getElementById('commitMessage');
             const commandsDiv = document.getElementById('gitCommands');
             
-            commitInput.addEventListener('input', () => {
+            // Update commands immediately
+            const updateCommands = () => {
                 const message = commitInput.value.trim() || 'Update Clockwork Elite';
                 commandsDiv.innerHTML = `
                     <div style="color: #10b981; margin-bottom: 8px;">// Copy and paste these commands in Command Prompt/Terminal:</div>
@@ -2278,7 +2299,16 @@ Note: For more detailed content analysis, please copy and paste specific text se
                     <div>git commit -m "${message}"</div>
                     <div>git push</div>
                 `;
-            });
+            };
+            
+            // Initial update
+            updateCommands();
+            
+            // Remove any existing listeners to prevent duplicates
+            commitInput.removeEventListener('input', updateCommands);
+            
+            // Add fresh listener
+            commitInput.addEventListener('input', updateCommands);
         }
         
         function copyGitCommands() {
