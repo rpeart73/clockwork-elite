@@ -590,7 +590,8 @@
         
         #outputText {
             width: 100%;
-            min-height: 400px;
+            min-height: 600px;
+            max-height: 80vh;
             padding: 16px;
             border: 1px solid #e5e7eb;
             border-radius: 8px;
@@ -598,6 +599,7 @@
             font-size: 14px;
             resize: vertical;
             background: #f9fafb;
+            overflow-y: auto;
         }
         
         .modal-actions {
@@ -1709,15 +1711,15 @@
                 output += `${poc.dateStr} | ${serviceType} | 1 hour | Academic Support | ${studentName}\n\n`;
                 
                 if (noteStyle === 'natural') {
-                    // Natural Narrative Style
+                    // Natural Narrative Style - Simple and direct
                     output += `OBJECTIVE:\n`;
-                    output += `${studentName} reached out seeking assistance with course-related matters. The communication indicated a need for clarification and guidance on specific academic requirements and expectations.\n\n`;
+                    output += `${studentName} contacted me about course requirements. They needed help understanding the assignment.\n\n`;
                     
                     output += `WHAT TRANSPIRED:\n`;
-                    output += `I received and thoroughly reviewed ${studentName}'s inquiry, identifying key areas of concern. After careful analysis of the questions presented, I formulated a comprehensive response addressing each point. The interaction was professional and focused on providing clear, actionable guidance.\n\n`;
+                    output += `I read ${studentName}'s email and identified their questions. I wrote a response that addressed each point. We discussed the assignment requirements and deadlines.\n\n`;
                     
                     output += `OUTCOME/PLAN:\n`;
-                    output += `Successfully provided ${studentName} with detailed clarification on all raised concerns. The response included specific action items and next steps. I will continue to monitor for any follow-up questions and remain available for additional support as needed.\n`;
+                    output += `I answered ${studentName}'s questions about the assignment. Sent them the information they needed. Will check for follow-up questions.\n`;
                 } else {
                     // Bullet Point Style (existing)
                     output += `OBJECTIVE:\n`;
@@ -1774,22 +1776,22 @@
         }
         
         function generateContextualBullet(section, index) {
-            // Use actual analysis data to generate contextual bullets
+            // Simple, direct language
             const templates = {
                 objective: [
-                    'Student initiated contact regarding academic matter',
-                    'Inquiry focused on course requirements and expectations',
-                    'Request for clarification on assignment parameters'
+                    'Student asked about the assignment',
+                    'Email about course requirements',
+                    'Question about project deadline'
                 ],
                 transpired: [
-                    'Received and reviewed student email communication',
-                    'Analyzed specific questions to formulate comprehensive response',
-                    'Drafted detailed reply addressing all points raised'
+                    'Read student email',
+                    'Identified their questions',
+                    'Sent response with answers'
                 ],
                 outcome: [
-                    'Successfully addressed student inquiry with detailed response',
-                    'Provided clear guidance and next steps',
-                    'Will monitor for follow-up questions'
+                    'Answered their questions',
+                    'Gave them next steps',
+                    'Will check for follow-ups'
                 ]
             };
             
