@@ -1,0 +1,2695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Clockwork Elite - Intelligent Task & Case Note Generator v4.1</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .subtitle {
+            margin: 0;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .version-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Workflow State Bar */
+        .workflow-state {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .state-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .state-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ddd;
+            transition: all 0.3s ease;
+        }
+        
+        .state-dot.active {
+            background: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+            animation: pulse-dot 2s infinite;
+        }
+        
+        @keyframes pulse-dot {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        
+        .workflow-progress {
+            flex: 1;
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .workflow-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        /* Main Layout */
+        .main-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .content-area {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            min-height: 800px;
+        }
+        
+        @media (max-width: 1024px) {
+            .content-area {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Input Section */
+        .input-section {
+            padding: 30px;
+            border-right: 1px solid #e5e7eb;
+        }
+        
+        .input-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+        
+        .input-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0;
+        }
+        
+        .smart-mode-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #16a34a;
+        }
+        
+        .smart-mode-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #16a34a;
+            animation: blink 2s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* Universal Input Area */
+        .universal-input {
+            position: relative;
+            margin-bottom: 25px;
+        }
+        
+        .input-wrapper {
+            position: relative;
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .input-wrapper:focus-within {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        
+        .input-wrapper.processing {
+            border-color: #10b981;
+            animation: processing-pulse 2s infinite;
+        }
+        
+        @keyframes processing-pulse {
+            0%, 100% { border-color: #10b981; }
+            50% { border-color: #059669; }
+        }
+        
+        #universalInput {
+            width: 100%;
+            min-height: 200px;
+            padding: 16px;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        #universalInput:focus {
+            outline: none;
+        }
+        
+        .input-placeholder {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            color: #9ca3af;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+        
+        .input-wrapper:focus-within .input-placeholder,
+        .input-wrapper.has-content .input-placeholder {
+            opacity: 0;
+        }
+        
+        /* File Upload Area */
+        .file-upload-zone {
+            border: 2px dashed #e5e7eb;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+        }
+        
+        .file-upload-zone:hover {
+            border-color: #667eea;
+            background: #f3f4f6;
+        }
+        
+        .file-upload-zone.dragover {
+            border-color: #667eea;
+            background: #ede9fe;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.4;
+        }
+        
+        .upload-text {
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 4px;
+        }
+        
+        .upload-subtext {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        /* Real-time Analysis Panel */
+        .analysis-panel {
+            background: #f3f4f6;
+            padding: 30px 30px 120px 30px;
+            position: relative;
+            overflow-y: auto;
+            height: 100%;
+        }
+        
+        .analysis-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+        
+        /* Smart Suggestions */
+        .smart-suggestions {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        
+        .suggestion-label {
+            font-size: 14px;
+            color: #4b5563;
+        }
+        
+        .suggestion-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .confidence-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        @media (min-width: 768px) {
+            .quick-actions {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .quick-actions {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 8px;
+            }
+        }
+        
+        .quick-action-btn {
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #4b5563;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .quick-action-btn:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+        
+        .quick-action-btn.active {
+            background: #ede9fe;
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        /* Content Preview */
+        .content-preview {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .preview-empty {
+            text-align: center;
+            color: #9ca3af;
+            padding: 40px;
+        }
+        
+        .detected-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .detected-icon {
+            width: 32px;
+            height: 32px;
+            background: #e0e7ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .detected-info {
+            flex: 1;
+        }
+        
+        .detected-label {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .detected-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        /* Generate Button */
+        .generate-section {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
+            background: linear-gradient(to top, #f3f4f6 60%, rgba(243, 244, 246, 0) 100%);
+            padding-top: 40px;
+            pointer-events: none;
+        }
+        
+        .generate-section .generate-btn {
+            pointer-events: auto;
+        }
+        
+        .generate-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .generate-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .generate-btn:hover::before {
+            left: 100%;
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .generate-btn:disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* Output Modal */
+        .output-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .output-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f3f4f6;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #6b7280;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+        
+        .modal-body {
+            padding: 24px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        #outputText {
+            width: 100%;
+            min-height: 600px;
+            max-height: 80vh;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            background: #f9fafb;
+            overflow-y: auto;
+        }
+        
+        .modal-actions {
+            padding: 20px 24px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        
+        .modal-btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .modal-btn-primary:hover {
+            background: #5a67d8;
+        }
+        
+        .modal-btn-secondary {
+            background: #f3f4f6;
+            color: #4b5563;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .modal-btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        /* Status Messages */
+        .status-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease;
+            z-index: 1001;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        
+        .status-message.success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .status-message.error {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .status-message.info {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        /* Loading State */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            display: none;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Form Elements - Minimal, Smart */
+        .smart-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .form-field {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .form-field.visible {
+            display: block;
+        }
+        
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 6px;
+            display: block;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* Saved Items Drawer */
+        .saved-drawer {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            bottom: 0;
+            width: 400px;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+            z-index: 999;
+            transition: right 0.3s ease;
+        }
+        
+        .saved-drawer.open {
+            right: 0;
+        }
+        
+        .drawer-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .drawer-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .drawer-content {
+            padding: 20px;
+            height: calc(100% - 70px);
+            overflow-y: auto;
+        }
+        
+        .saved-item {
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .saved-item:hover {
+            background: #f3f4f6;
+            transform: translateX(-4px);
+        }
+        
+        .saved-item-date {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        
+        .saved-item-preview {
+            font-size: 14px;
+            color: #1f2937;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Floating Action Buttons */
+        .fab-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 998;
+        }
+        
+        .fab {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+        
+        .fab.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content-area {
+                grid-template-columns: 1fr;
+            }
+            
+            .analysis-panel {
+                display: none;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 20px;
+            }
+            
+            .saved-drawer {
+                width: 100%;
+                right: -100%;
+            }
+        }
+        
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        /* Focus Visible */
+        :focus-visible {
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Clockwork Elite <span class="version-badge">v4.1</span></h1>
+            <p class="subtitle">Intelligent workflow automation with real-time analysis</p>
+        </div>
+        
+        <!-- Workflow State Bar -->
+        <div class="workflow-state">
+            <div class="state-indicator">
+                <div class="state-dot active"></div>
+                <span id="stateText">Ready for input</span>
+            </div>
+            <div class="workflow-progress">
+                <div class="workflow-progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+        
+        <!-- Main Container -->
+        <div class="main-container">
+            <div class="content-area">
+                <!-- Input Section -->
+                <div class="input-section">
+                    <div class="input-header">
+                        <h2 class="input-title">Smart Input</h2>
+                        <div class="smart-mode-indicator">
+                            <div class="smart-mode-dot"></div>
+                            <span>Auto-detect ON</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Universal Input Area -->
+                    <div class="universal-input">
+                        <div class="input-wrapper" id="inputWrapper">
+                            <div class="input-placeholder">
+                                Paste an email or type project information...
+                            </div>
+                            <textarea 
+                                id="universalInput" 
+                                placeholder=""
+                                spellcheck="true"
+                            ></textarea>
+                        </div>
+                    </div>
+                    
+                    
+                    <!-- Quick Actions -->
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" onclick="openSavedDrawer()">
+                            💾 Saved Items
+                        </button>
+                        <button class="quick-action-btn" onclick="clearAll()">
+                            🗑️ Clear All
+                        </button>
+                        <button class="quick-action-btn" onclick="clearCache()">
+                            🔄 Clear Cache
+                        </button>
+                        <button class="quick-action-btn" onclick="forceRefresh()">
+                            ⚡ Force Refresh
+                        </button>
+                        <button class="quick-action-btn" onclick="showGitHelper()">
+                            📤 Push Changes
+                        </button>
+                        <button class="quick-action-btn" onclick="openProjectFolder()">
+                            📁 Open Folder
+                        </button>
+                    </div>
+                    
+                    <!-- Loading Overlay -->
+                    <div class="loading-overlay" id="loadingOverlay">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+                
+                <!-- Real-time Analysis Panel -->
+                <div class="analysis-panel">
+                    <h3 class="analysis-header">Real-time Analysis</h3>
+                    
+                    <!-- Smart Suggestions -->
+                    <div class="smart-suggestions" id="smartSuggestions">
+                        <div class="suggestion-item">
+                            <span class="suggestion-label">Detected Type</span>
+                            <span class="suggestion-value" id="detectedType">
+                                Waiting for input...
+                            </span>
+                        </div>
+                        <div class="suggestion-item">
+                            <span class="suggestion-label">Entry Mode</span>
+                            <span class="suggestion-value" id="entryMode">
+                                Auto-detect
+                            </span>
+                        </div>
+                        <div class="suggestion-item">
+                            <span class="suggestion-label">Time Estimate</span>
+                            <span class="suggestion-value" id="timeEstimate">
+                                --
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Content Preview -->
+                    <div class="content-preview" id="contentPreview">
+                        <div class="preview-empty">
+                            Content analysis will appear here as you type or paste
+                        </div>
+                    </div>
+                    
+                    <!-- Smart Form Fields -->
+                    <div class="smart-form" id="smartForm">
+                        <div class="form-field" id="studentNameField">
+                            <label class="form-label" for="studentName">Student Name</label>
+                            <input type="text" id="studentName" class="form-input" placeholder="Auto-detected from email">
+                        </div>
+                        
+                        <div class="form-field" id="dateRangeField">
+                            <label class="form-label">Date Range</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <input type="date" id="startDate" class="form-input" onchange="updateBusinessDays()">
+                                <input type="date" id="endDate" class="form-input" onchange="updateBusinessDays()">
+                            </div>
+                            <div style="margin-top: 8px; font-size: 13px; color: #6b7280;">
+                                <span id="businessDaysInfo">Select dates to see business days</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-field" id="totalDaysField">
+                            <label class="form-label" for="totalDaysWorked">Total Days Worked on Project</label>
+                            <input type="number" id="totalDaysWorked" class="form-input" placeholder="e.g., 8" min="1" max="365" onchange="validateTotalDays()">
+                            <div style="margin-top: 4px; font-size: 12px; color: #6b7280;">
+                                Enter actual days worked (tasks will be distributed across these days)
+                            </div>
+                        </div>
+                        
+                        
+                        <div class="form-field" id="noteStyleField">
+                            <label class="form-label" for="noteStyle">Note Style</label>
+                            <select id="noteStyle" class="form-input">
+                                <option value="natural" selected>Natural Narrative</option>
+                                <option value="bullets">Bullet Points</option>
+                                <option value="concise">Concise Summary</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-field" id="detailLevelField">
+                            <label class="form-label" for="detailLevel">Detail Depth</label>
+                            <select id="detailLevel" class="form-input">
+                                <option value="basic">Basic (3 points per section)</option>
+                                <option value="standard" selected>Standard (5 points per section)</option>
+                                <option value="enhanced">Enhanced (7+ points per section)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-field" id="languageField">
+                            <label class="form-label" for="language">Language</label>
+                            <select id="language" class="form-input">
+                                <option value="canadian" selected>Canadian English</option>
+                                <option value="british">British English</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Generate Button -->
+                    <div class="generate-section">
+                        <button class="generate-btn" id="generateBtn" disabled>
+                            Analyzing input...
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Output Modal -->
+        <div class="output-modal" id="outputModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Generated Entries</h3>
+                    <button class="modal-close" onclick="closeOutput()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="outputText"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-secondary" onclick="downloadOutput()">
+                        Download
+                    </button>
+                    <button class="modal-btn modal-btn-secondary" onclick="saveOutput()">
+                        Save
+                    </button>
+                    <button class="modal-btn modal-btn-primary" onclick="copyOutput()">
+                        Copy to Clipboard
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Saved Items Drawer -->
+        <div class="saved-drawer" id="savedDrawer">
+            <div class="drawer-header">
+                <h3 class="drawer-title">Saved Entries</h3>
+                <button class="modal-close" onclick="closeSavedDrawer()">&times;</button>
+            </div>
+            <div class="drawer-content" id="savedItems">
+                <div class="preview-empty">No saved items yet</div>
+            </div>
+        </div>
+        
+        <!-- Git Helper Modal -->
+        <div class="output-modal" id="gitModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">📤 Push Changes to GitHub Pages</h3>
+                    <button class="modal-close" onclick="closeGitHelper()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="margin-top: 0;">Quick Options:</h4>
+                        <button class="modal-btn modal-btn-primary" onclick="openTerminal()" style="margin-right: 10px;">
+                            🖥️ Open Terminal
+                        </button>
+                        <button class="modal-btn modal-btn-primary" onclick="copyGitCommands()" style="margin-right: 10px;">
+                            📋 Copy Commands
+                        </button>
+                        <button class="modal-btn modal-btn-secondary" onclick="downloadTerminalScript()">
+                            💾 Download Script
+                        </button>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Commit Message:</label>
+                        <input type="text" id="commitMessage" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;" placeholder="Enter commit message (optional)">
+                    </div>
+                    
+                    <div style="background: #1f2937; color: #f3f4f6; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 13px; overflow-x: auto;" id="gitCommands">
+                        <div style="color: #10b981; margin-bottom: 8px;">// Copy and paste these commands in Command Prompt/Terminal:</div>
+                        <div>cd "C:\Users\raymo\projects\clockwork-elite"</div>
+                        <div>git add index.html</div>
+                        <div>git commit -m "Update Clockwork Elite"</div>
+                        <div>git push</div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding: 12px; background: #fef3c7; border-radius: 6px; font-size: 14px;">
+                        <strong>💡 Pro Tip:</strong> After pushing, your changes will appear at 
+                        <a href="https://rpeart73.github.io/clockwork-elite/" target="_blank" style="color: #0066cc;">https://rpeart73.github.io/clockwork-elite/</a> 
+                        in 1-5 minutes.
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-secondary" onclick="closeGitHelper()">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Floating Action Buttons -->
+        <div class="fab-container">
+            <button class="fab" onclick="showHelp()" title="Help">
+                ❓
+            </button>
+            <button class="fab primary" onclick="quickGenerate()" title="Quick Generate" id="quickGenBtn" style="display: none;">
+                ⚡
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // Workflow States
+        const WorkflowState = {
+            IDLE: 'idle',
+            ANALYZING: 'analyzing',
+            READY: 'ready',
+            GENERATING: 'generating',
+            COMPLETE: 'complete'
+        };
+        
+        // Global State
+        let currentState = WorkflowState.IDLE;
+        let contentType = null;
+        let analysisData = {};
+        let detectedPOCs = [];
+        let savedEntries = [];
+        let autoSaveTimer = null;
+        let workflowMemory = {};
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+        
+        function initializeApp() {
+            // Load saved data
+            loadSavedData();
+            loadWorkflowMemory();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Set initial state
+            updateWorkflowState(WorkflowState.IDLE);
+            
+            // Initialize dates
+            setDefaultDates();
+            
+            // Add keyboard shortcuts
+            setupKeyboardShortcuts();
+        }
+        
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + Enter to generate
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    const generateBtn = document.getElementById('generateBtn');
+                    if (!generateBtn.disabled) {
+                        generateEntries();
+                    }
+                }
+                
+                // Ctrl/Cmd + S to save output
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    if (document.getElementById('outputModal').classList.contains('active')) {
+                        saveOutput();
+                    }
+                }
+                
+                // Escape to close modals
+                if (e.key === 'Escape') {
+                    if (document.getElementById('outputModal').classList.contains('active')) {
+                        closeOutput();
+                    } else if (document.getElementById('gitModal').classList.contains('active')) {
+                        closeGitHelper();
+                    } else if (document.getElementById('savedDrawer').classList.contains('open')) {
+                        closeSavedDrawer();
+                    }
+                }
+            });
+        }
+        
+        // Event Listeners
+        function setupEventListeners() {
+            const universalInput = document.getElementById('universalInput');
+            
+            // Universal input handling
+            universalInput.addEventListener('input', debounce(handleInputChange, 300));
+            universalInput.addEventListener('paste', handlePaste);
+            
+            
+            // Generate button
+            document.getElementById('generateBtn').addEventListener('click', generateEntries);
+            
+            // Form field changes
+            document.getElementById('studentName').addEventListener('change', updateMemory);
+            document.getElementById('detailLevel').addEventListener('change', updateMemory);
+        }
+        
+        // Input Handling
+        function handleInputChange(event) {
+            const input = event.target.value.trim();
+            const wrapper = document.getElementById('inputWrapper');
+            
+            if (input) {
+                wrapper.classList.add('has-content');
+                analyzeContent(input);
+            } else {
+                wrapper.classList.remove('has-content');
+                resetAnalysis();
+            }
+        }
+        
+        function handlePaste(event) {
+            event.preventDefault();
+            const text = event.clipboardData.getData('text');
+            event.target.value = text;
+            handleInputChange({ target: event.target });
+        }
+        
+        // Content Analysis
+        async function analyzeContent(content) {
+            updateWorkflowState(WorkflowState.ANALYZING);
+            
+            // Show processing state
+            document.getElementById('inputWrapper').classList.add('processing');
+            
+            // Simulate async analysis
+            setTimeout(() => {
+                // Detect content type
+                contentType = detectContentType(content);
+                
+                // Update UI based on content type
+                updateUIForContentType(contentType);
+                
+                // Perform specific analysis
+                if (contentType === 'email') {
+                    analysisData = analyzeEmail(content);
+                    displayEmailAnalysis(analysisData);
+                } else if (contentType === 'document') {
+                    analysisData = analyzeDocument(content);
+                    displayDocumentAnalysis(analysisData);
+                } else {
+                    analysisData = analyzeGenericText(content);
+                    displayGenericAnalysis(analysisData);
+                }
+                
+                // Apply workflow memory
+                applyWorkflowMemory();
+                
+                // Update state
+                document.getElementById('inputWrapper').classList.remove('processing');
+                updateWorkflowState(WorkflowState.READY);
+            }, 500);
+        }
+        
+        // Content Type Detection
+        function detectContentType(content) {
+            const emailPatterns = [
+                /(?:hi|hello|dear)\s+(?:professor|dr\.|mr\.|ms\.)/i,
+                /(?:my name is|i am|i'm)\s+\w+/i,
+                /(?:regards|sincerely|best|thanks),?\s*\n/i,
+                /@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+            ];
+            
+            const documentPatterns = [
+                /(?:project|task|deliverable|milestone):/i,
+                /(?:section|chapter|part)\s+\d+/i,
+                /(?:objective|goal|requirement)s?:/i,
+                /\b(?:conducted|developed|created|analyzed|reviewed)\b/i
+            ];
+            
+            const emailScore = emailPatterns.filter(p => content.match(p)).length;
+            const docScore = documentPatterns.filter(p => content.match(p)).length;
+            
+            if (emailScore > docScore && emailScore >= 2) {
+                return 'email';
+            } else if (docScore >= 2) {
+                return 'document';
+            }
+            
+            return 'generic';
+        }
+        
+        // Email Analysis
+        function analyzeEmail(content) {
+            const analysis = {
+                type: 'email',
+                dates: extractDates(content),
+                sender: extractSender(content),
+                topics: extractTopics(content),
+                urgency: detectUrgency(content),
+                questions: extractQuestions(content),
+                meetings: extractMeetings(content)
+            };
+            
+            // Detect multiple POCs from various indicators
+            detectedPOCs = [];
+            
+            // 1. Add POCs from specific dates mentioned
+            analysis.dates.forEach((date, index) => {
+                detectedPOCs.push({
+                    id: Date.now() + index,
+                    date: date.date,
+                    dateStr: date.formatted,
+                    type: 'email',
+                    context: date.context,
+                    content: content,
+                    selected: true
+                });
+            });
+            
+            // 2. Smart POC detection - only add if truly indicates separate contact
+            const followUpIndicators = {
+                strong: [
+                    /following up on our (call|meeting|discussion) from/i,
+                    /as we discussed (yesterday|last week|on \w+day)/i,
+                    /per our (\w+day) (conversation|meeting)/i
+                ],
+                medium: [
+                    /following up|follow-up/i,
+                    /as discussed/i,
+                    /thank you for meeting/i
+                ]
+            };
+            
+            let hasStrongIndicator = false;
+            followUpIndicators.strong.forEach(pattern => {
+                const match = content.match(pattern);
+                if (match && !hasStrongIndicator) {
+                    hasStrongIndicator = true;
+                    // Extract date if possible, otherwise estimate
+                    const dateMatch = match[0].match(/yesterday|last week|Monday|Tuesday|Wednesday|Thursday|Friday/i);
+                    let previousDate = new Date();
+                    
+                    if (dateMatch) {
+                        if (dateMatch[0].toLowerCase() === 'yesterday') {
+                            previousDate.setDate(previousDate.getDate() - 1);
+                        } else if (dateMatch[0].toLowerCase() === 'last week') {
+                            previousDate.setDate(previousDate.getDate() - 7);
+                        }
+                    } else {
+                        previousDate.setDate(previousDate.getDate() - 2);
+                    }
+                    
+                    detectedPOCs.push({
+                        id: Date.now() + 100,
+                        date: previousDate,
+                        dateStr: formatDate(previousDate),
+                        type: 'Previous ' + (match[0].includes('call') ? 'call' : 'meeting'),
+                        context: match[0],
+                        content: content,
+                        selected: true
+                    });
+                }
+            });
+            
+            // Only check medium indicators if no strong ones found and no dates already detected
+            if (!hasStrongIndicator && analysis.dates.length === 0) {
+                for (let pattern of followUpIndicators.medium) {
+                    if (content.match(pattern) && detectedPOCs.length === 0) {
+                        // Don't add extra POC, just note it's a follow-up
+                        // This will keep it as single POC
+                        break;
+                    }
+                }
+            }
+            
+            // 3. Check for meeting references
+            if (analysis.meetings.length > 0) {
+                analysis.meetings.forEach((meeting, index) => {
+                    detectedPOCs.push({
+                        id: Date.now() + 200 + index,
+                        date: meeting.date || new Date(),
+                        dateStr: formatDate(meeting.date || new Date()),
+                        type: 'meeting',
+                        context: meeting.context,
+                        content: content,
+                        selected: true
+                    });
+                });
+            }
+            
+            // 4. If still no POCs, create one for today
+            if (detectedPOCs.length === 0) {
+                detectedPOCs.push({
+                    id: Date.now(),
+                    date: new Date(),
+                    dateStr: formatDate(new Date()),
+                    type: 'email',
+                    context: 'Current email',
+                    content: content,
+                    selected: true
+                });
+            }
+            
+            // Remove duplicates - keep the most specific POC for each date
+            const uniquePOCs = new Map();
+            detectedPOCs.forEach(poc => {
+                const dateKey = poc.dateStr;
+                if (!uniquePOCs.has(dateKey) || poc.type !== 'email') {
+                    // Prefer meeting/call over email for the same date
+                    uniquePOCs.set(dateKey, poc);
+                }
+            });
+            detectedPOCs = Array.from(uniquePOCs.values());
+            
+            // Sort by date
+            detectedPOCs.sort((a, b) => a.date - b.date);
+            
+            return analysis;
+        }
+        
+        // Document Analysis
+        function analyzeDocument(content) {
+            return {
+                type: 'document',
+                activities: extractActivities(content),
+                deliverables: extractDeliverables(content),
+                complexity: assessComplexity(content)
+            };
+        }
+        
+        // Generic Text Analysis
+        function analyzeGenericText(content) {
+            return {
+                type: 'generic',
+                wordCount: content.split(/\s+/).length,
+                topics: extractTopics(content)
+            };
+        }
+        
+        // Extraction Functions
+        function extractDates(content) {
+            const dates = [];
+            const patterns = [
+                /(\w+\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})/gi,
+                /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/gi,
+                /\b(yesterday|today|tomorrow)\b/gi
+            ];
+            
+            patterns.forEach(pattern => {
+                const matches = content.matchAll(pattern);
+                for (let match of matches) {
+                    const parsed = parseDate(match[0]);
+                    if (parsed) {
+                        dates.push({
+                            date: parsed,
+                            formatted: formatDate(parsed),
+                            context: match[0]
+                        });
+                    }
+                }
+            });
+            
+            return dates;
+        }
+        
+        function extractSender(content) {
+            const patterns = [
+                /(?:my name is|i am|i'm)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i,
+                /(?:regards|sincerely|best),?\s*\n+([A-Z][a-z]+)/i
+            ];
+            
+            for (let pattern of patterns) {
+                const match = content.match(pattern);
+                if (match && match[1]) {
+                    return match[1].trim();
+                }
+            }
+            
+            return null;
+        }
+        
+        function extractTopics(content) {
+            const topics = [];
+            const keywords = {
+                'assignment': /assignment|homework|project/gi,
+                'exam': /exam|test|quiz|midterm|final/gi,
+                'deadline': /deadline|due date|submission/gi,
+                'meeting': /meeting|discussion|consultation/gi
+            };
+            
+            Object.entries(keywords).forEach(([topic, pattern]) => {
+                if (content.match(pattern)) {
+                    topics.push(topic);
+                }
+            });
+            
+            return topics;
+        }
+        
+        function extractQuestions(content) {
+            const sentences = content.split(/[.!?]+/);
+            return sentences.filter(s => 
+                s.includes('?') || 
+                s.match(/\b(what|when|where|why|how|can|could|would)\b/i)
+            ).length;
+        }
+        
+        function detectUrgency(content) {
+            const urgentWords = content.match(/\b(urgent|asap|immediately|deadline|due)\b/gi);
+            return urgentWords ? urgentWords.length : 0;
+        }
+        
+        function extractMeetings(content) {
+            const meetings = [];
+            const meetingPatterns = [
+                /(?:met|meeting|spoke|talked|discussed) (?:with |about |on ).*?(?:on |yesterday|today|Monday|Tuesday|Wednesday|Thursday|Friday)/gi,
+                /(?:Monday|Tuesday|Wednesday|Thursday|Friday|yesterday|today)'s (?:meeting|discussion|call)/gi,
+                /(?:office hours|zoom call|phone call|in-person meeting)/gi
+            ];
+            
+            meetingPatterns.forEach(pattern => {
+                const matches = content.matchAll(pattern);
+                for (let match of matches) {
+                    meetings.push({
+                        context: match[0],
+                        date: parseDate(match[0])
+                    });
+                }
+            });
+            
+            return meetings;
+        }
+        
+        function extractActivities(content) {
+            const activities = [];
+            const verbs = ['conducted', 'developed', 'created', 'analyzed', 'reviewed'];
+            
+            verbs.forEach(verb => {
+                const pattern = new RegExp(`\\b${verb}\\s+(.{10,50})`, 'gi');
+                const matches = content.matchAll(pattern);
+                for (let match of matches) {
+                    activities.push(match[0]);
+                }
+            });
+            
+            return activities;
+        }
+        
+        function extractDeliverables(content) {
+            const pattern = /(?:deliverable|output|result)s?:?\s*([^.]+)/gi;
+            const matches = content.matchAll(pattern);
+            const deliverables = [];
+            
+            for (let match of matches) {
+                deliverables.push(match[1].trim());
+            }
+            
+            return deliverables;
+        }
+        
+        function assessComplexity(content) {
+            const wordCount = content.split(/\s+/).length;
+            const techTerms = content.match(/\b(?:implement|architecture|framework|algorithm|integration)\b/gi);
+            
+            if (wordCount > 500 || (techTerms && techTerms.length > 5)) {
+                return 'high';
+            } else if (wordCount > 200) {
+                return 'medium';
+            }
+            return 'low';
+        }
+        
+        // UI Updates
+        function updateUIForContentType(type) {
+            // Update detected type
+            document.getElementById('detectedType').innerHTML = 
+                type === 'email' ? '📧 Email <span class="confidence-badge">95%</span>' :
+                type === 'document' ? '📄 Document <span class="confidence-badge">90%</span>' :
+                '📝 Text <span class="confidence-badge">80%</span>';
+            
+            // Update entry mode
+            document.getElementById('entryMode').textContent = 
+                type === 'email' ? 'Case Note Mode' : 'Task Mode';
+            
+            // Show/hide relevant fields
+            const studentField = document.getElementById('studentNameField');
+            const dateField = document.getElementById('dateRangeField');
+            const totalDaysField = document.getElementById('totalDaysField');
+            const noteStyleField = document.getElementById('noteStyleField');
+            
+            if (type === 'email') {
+                studentField.classList.add('visible');
+                dateField.classList.remove('visible');
+                totalDaysField.classList.remove('visible');
+                noteStyleField.classList.add('visible');
+            } else {
+                studentField.classList.remove('visible');
+                dateField.classList.add('visible');
+                totalDaysField.classList.add('visible');
+                noteStyleField.classList.remove('visible');
+                // Update business days when switching to task mode
+                updateBusinessDays();
+            }
+            
+            // Always show detail level and language
+            document.getElementById('detailLevelField').classList.add('visible');
+            document.getElementById('languageField').classList.add('visible');
+        }
+        
+        function updateBusinessDays() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const infoSpan = document.getElementById('businessDaysInfo');
+            const totalDaysInput = document.getElementById('totalDaysWorked');
+            
+            if (startDate && endDate) {
+                const businessDays = calculateBusinessDays(startDate, endDate);
+                infoSpan.innerHTML = `<strong>${businessDays}</strong> business days in selected range`;
+                
+                // Update max allowed days
+                totalDaysInput.max = businessDays;
+                
+                // Validate current value
+                if (totalDaysInput.value && parseInt(totalDaysInput.value) > businessDays) {
+                    totalDaysInput.value = businessDays;
+                    showStatus(`Adjusted to maximum ${businessDays} business days`, 'info');
+                }
+                
+                // Set a reasonable default for total days worked (about 40% of business days)
+                if (!totalDaysInput.value) {
+                    const suggestedDays = Math.max(1, Math.floor(businessDays * 0.4));
+                    totalDaysInput.placeholder = `e.g., ${suggestedDays} (max: ${businessDays})`;
+                }
+            } else {
+                infoSpan.textContent = 'Select dates to see business days';
+            }
+        }
+        
+        // Display Analysis Results
+        function displayEmailAnalysis(analysis) {
+            const preview = document.getElementById('contentPreview');
+            let html = '';
+            
+            if (analysis.sender) {
+                html += `<div class="detected-item">
+                    <div class="detected-icon">👤</div>
+                    <div class="detected-info">
+                        <div class="detected-label">Student Name</div>
+                        <div class="detected-value">${analysis.sender}</div>
+                    </div>
+                </div>`;
+                
+                // Auto-fill student name
+                document.getElementById('studentName').value = analysis.sender.split(' ')[0];
+            }
+            
+            if (detectedPOCs.length > 0) {
+                html += `<div class="detected-item">
+                    <div class="detected-icon">📅</div>
+                    <div class="detected-info">
+                        <div class="detected-label">Points of Contact Detected</div>
+                        <div class="detected-value">${detectedPOCs.length} POC${detectedPOCs.length > 1 ? 's' : ''}</div>
+                    </div>
+                </div>`;
+                
+                // Show each POC
+                detectedPOCs.forEach(poc => {
+                    html += `<div class="detected-item" style="margin-left: 20px; background: #e0e7ff;">
+                        <div class="detected-icon" style="font-size: 14px;">📌</div>
+                        <div class="detected-info">
+                            <div class="detected-label">${poc.type}</div>
+                            <div class="detected-value">${poc.dateStr}</div>
+                        </div>
+                    </div>`;
+                });
+            }
+            
+            if (analysis.topics.length > 0) {
+                html += `<div class="detected-item">
+                    <div class="detected-icon">🏷️</div>
+                    <div class="detected-info">
+                        <div class="detected-label">Topics</div>
+                        <div class="detected-value">${analysis.topics.join(', ')}</div>
+                    </div>
+                </div>`;
+            }
+            
+            // Update time estimate
+            const hours = analysis.dates.length || 1;
+            document.getElementById('timeEstimate').textContent = `${hours} hour${hours > 1 ? 's' : ''}`;
+            
+            preview.innerHTML = html || '<div class="preview-empty">No specific patterns detected</div>';
+        }
+        
+        function displayDocumentAnalysis(analysis) {
+            const preview = document.getElementById('contentPreview');
+            let html = '';
+            
+            if (analysis.activities.length > 0) {
+                html += `<div class="detected-item">
+                    <div class="detected-icon">✅</div>
+                    <div class="detected-info">
+                        <div class="detected-label">Activities Found</div>
+                        <div class="detected-value">${analysis.activities.length} activities</div>
+                    </div>
+                </div>`;
+            }
+            
+            html += `<div class="detected-item">
+                <div class="detected-icon">📊</div>
+                <div class="detected-info">
+                    <div class="detected-label">Complexity</div>
+                    <div class="detected-value">${analysis.complexity.toUpperCase()}</div>
+                </div>
+            </div>`;
+            
+            // Auto-select detail level based on complexity
+            if (analysis.complexity === 'high') {
+                document.getElementById('detailLevel').value = 'comprehensive';
+            } else if (analysis.complexity === 'low') {
+                document.getElementById('detailLevel').value = 'basic';
+            }
+            
+            preview.innerHTML = html;
+        }
+        
+        function displayGenericAnalysis(analysis) {
+            const preview = document.getElementById('contentPreview');
+            preview.innerHTML = `<div class="detected-item">
+                <div class="detected-icon">📝</div>
+                <div class="detected-info">
+                    <div class="detected-label">Content Size</div>
+                    <div class="detected-value">${analysis.wordCount} words</div>
+                </div>
+            </div>`;
+        }
+        
+        // Workflow State Management
+        function updateWorkflowState(newState) {
+            currentState = newState;
+            
+            const stateText = document.getElementById('stateText');
+            const progressBar = document.getElementById('progressBar');
+            const generateBtn = document.getElementById('generateBtn');
+            const quickGenBtn = document.getElementById('quickGenBtn');
+            
+            switch(newState) {
+                case WorkflowState.IDLE:
+                    stateText.textContent = 'Ready for input';
+                    progressBar.style.width = '0%';
+                    generateBtn.textContent = 'Waiting for content...';
+                    generateBtn.disabled = true;
+                    quickGenBtn.style.display = 'none';
+                    break;
+                    
+                case WorkflowState.ANALYZING:
+                    stateText.textContent = 'Analyzing content...';
+                    progressBar.style.width = '30%';
+                    generateBtn.textContent = 'Analyzing...';
+                    generateBtn.disabled = true;
+                    break;
+                    
+                case WorkflowState.READY:
+                    stateText.textContent = 'Ready to generate';
+                    progressBar.style.width = '60%';
+                    generateBtn.textContent = 'Generate Entry';
+                    generateBtn.disabled = false;
+                    quickGenBtn.style.display = 'block';
+                    break;
+                    
+                case WorkflowState.GENERATING:
+                    stateText.textContent = 'Generating entries...';
+                    progressBar.style.width = '80%';
+                    generateBtn.textContent = 'Generating...';
+                    generateBtn.disabled = true;
+                    break;
+                    
+                case WorkflowState.COMPLETE:
+                    stateText.textContent = 'Generation complete';
+                    progressBar.style.width = '100%';
+                    generateBtn.textContent = 'Generate Entry';
+                    generateBtn.disabled = false;
+                    break;
+            }
+        }
+        
+        // Workflow Memory
+        function loadWorkflowMemory() {
+            const saved = localStorage.getItem('clockworkMemory');
+            if (saved) {
+                workflowMemory = JSON.parse(saved);
+            }
+        }
+        
+        function updateMemory() {
+            const studentName = document.getElementById('studentName').value;
+            if (studentName) {
+                if (!workflowMemory.students) workflowMemory.students = {};
+                workflowMemory.students[studentName] = {
+                    lastSeen: new Date().toISOString(),
+                    preferredDetailLevel: document.getElementById('detailLevel').value
+                };
+            }
+            
+            localStorage.setItem('clockworkMemory', JSON.stringify(workflowMemory));
+        }
+        
+        function applyWorkflowMemory() {
+            const studentName = document.getElementById('studentName').value;
+            if (studentName && workflowMemory.students && workflowMemory.students[studentName]) {
+                const memory = workflowMemory.students[studentName];
+                if (memory.preferredDetailLevel) {
+                    document.getElementById('detailLevel').value = memory.preferredDetailLevel;
+                }
+            }
+        }
+        
+        // Generate Entries
+        function generateEntries() {
+            updateWorkflowState(WorkflowState.GENERATING);
+            
+            setTimeout(() => {
+                let output = '';
+                
+                if (contentType === 'email') {
+                    output = generateCaseNotes();
+                } else {
+                    output = generateTasks();
+                }
+                
+                // Show output
+                document.getElementById('outputText').value = output;
+                document.getElementById('outputModal').classList.add('active');
+                
+                updateWorkflowState(WorkflowState.COMPLETE);
+                
+                // Auto-save
+                autoSaveOutput(output);
+            }, 1000);
+        }
+        
+        function generateCaseNotes() {
+            const studentName = document.getElementById('studentName').value || 'the student';
+            const serviceType = 'Email Support'; // Hardcoded for email case notes
+            const noteStyle = document.getElementById('noteStyle').value;
+            const detailLevel = document.getElementById('detailLevel').value;
+            
+            // Set bullet count based on detail level
+            const bulletCount = detailLevel === 'basic' ? 3 : 
+                               detailLevel === 'enhanced' ? 7 : 5; // standard = 5
+            
+            let output = '';
+            
+            // Add summary header if multiple POCs
+            if (detectedPOCs.length > 1) {
+                output += `// ${detectedPOCs.length} Points of Contact Detected\n`;
+                output += `// Student: ${studentName}\n`;
+                output += `// Service: ${serviceType}\n`;
+                output += '='.repeat(80) + '\n\n';
+            }
+            
+            detectedPOCs.forEach((poc, index) => {
+                // Adjust hours based on POC type
+                const hours = poc.type === 'meeting' ? '1.5 hours' : '1 hour';
+                output += `${poc.dateStr} | ${serviceType} | ${hours} | Academic Support | ${studentName}\n\n`;
+                
+                if (noteStyle === 'natural') {
+                    // Natural Narrative Style - Use analysis data
+                    output += `OBJECTIVE:\n`;
+                    if (analysisData.sender) {
+                        output += `${studentName} contacted me`;
+                    } else {
+                        output += `Received communication`;
+                    }
+                    
+                    if (analysisData.topics && analysisData.topics.length > 0) {
+                        output += ` regarding ${analysisData.topics.join(', ')}`;
+                    }
+                    output += `.\n\n`;
+                    
+                    output += `WHAT TRANSPIRED:\n`;
+                    output += `Reviewed the ${poc.type === 'email' ? 'email' : 'communication'}`;
+                    if (analysisData.questions > 0) {
+                        output += ` which contained ${analysisData.questions} question${analysisData.questions > 1 ? 's' : ''}`;
+                    }
+                    output += `. Provided response addressing the points raised.\n\n`;
+                    
+                    output += `OUTCOME/PLAN:\n`;
+                    output += `Responded to inquiry. `;
+                    if (analysisData.urgency > 0) {
+                        output += `Matter appeared time-sensitive. `;
+                    }
+                    output += `Will monitor for follow-up.\n`;
+                } else {
+                    // Bullet Point Style (existing)
+                    output += `OBJECTIVE:\n`;
+                    for (let i = 0; i < bulletCount; i++) {
+                        output += `• ${generateContextualBullet('objective', i)}\n`;
+                    }
+                    
+                    output += `\nWHAT TRANSPIRED:\n`;
+                    for (let i = 0; i < bulletCount; i++) {
+                        output += `• ${generateContextualBullet('transpired', i)}\n`;
+                    }
+                    
+                    output += `\nOUTCOME/PLAN:\n`;
+                    for (let i = 0; i < bulletCount; i++) {
+                        output += `• ${generateContextualBullet('outcome', i)}\n`;
+                    }
+                }
+                
+                // Add email verbatim after divider
+                if (poc.content && contentType === 'email') {
+                    output += '\n\n' + '-'.repeat(80) + '\n';
+                    output += 'ORIGINAL EMAIL:\n\n';
+                    output += poc.content.trim();
+                    output += '\n' + '-'.repeat(80);
+                }
+                
+                if (index < detectedPOCs.length - 1) {
+                    output += '\n\n' + '='.repeat(80) + '\n\n';
+                }
+            });
+            
+            return output;
+        }
+        
+        function generateTasks() {
+            const startDate = document.getElementById('startDate').value || new Date().toISOString().split('T')[0];
+            const endDate = document.getElementById('endDate').value || new Date().toISOString().split('T')[0];
+            const totalDaysWorked = parseInt(document.getElementById('totalDaysWorked').value) || 0;
+            const serviceType = 'Project Work'; // Hardcoded for tasks
+            const detailLevel = document.getElementById('detailLevel').value;
+            const bulletCount = detailLevel === 'basic' ? 3 : 
+                               detailLevel === 'enhanced' ? 7 : 5; // standard = 5
+            
+            let output = '';
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            // Calculate business days in range
+            const businessDays = calculateBusinessDays(startDate, endDate);
+            
+            // If no total days specified, use all business days
+            const daysToGenerate = totalDaysWorked > 0 ? Math.min(totalDaysWorked, businessDays) : businessDays;
+            
+            // Create array of all business days in range
+            const allBusinessDays = [];
+            let current = new Date(start);
+            while (current <= end) {
+                if (current.getDay() !== 0 && current.getDay() !== 6) {
+                    allBusinessDays.push(new Date(current));
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            
+            // Select days to use (evenly distributed)
+            const selectedDays = [];
+            if (daysToGenerate >= allBusinessDays.length) {
+                // Use all business days
+                selectedDays.push(...allBusinessDays);
+            } else {
+                // Distribute days evenly
+                const interval = allBusinessDays.length / daysToGenerate;
+                for (let i = 0; i < daysToGenerate; i++) {
+                    const index = Math.floor(i * interval);
+                    selectedDays.push(allBusinessDays[index]);
+                }
+            }
+            
+            // Generate tasks for selected days
+            selectedDays.forEach(day => {
+                output += `${formatDate(day)} | 8:00 AM - 1:00 PM | 5 hours | ${serviceType} | Development\n`;
+                
+                for (let i = 0; i < bulletCount; i++) {
+                    output += `- ${generateTaskBullet(i)}\n`;
+                }
+                
+                output += '\n';
+            });
+            
+            // Add summary at the top
+            if (totalDaysWorked > 0) {
+                output = `// Project Summary: ${daysToGenerate} days worked out of ${businessDays} business days\n// Date Range: ${formatDate(start)} to ${formatDate(end)}\n\n` + output;
+            }
+            
+            return output;
+        }
+        
+        function generateContextualBullet(section, index) {
+            const language = document.getElementById('language').value;
+            
+            // Generic, factual statements
+            const templates = {
+                objective: [
+                    'Student contacted instructor',
+                    'Inquiry received',
+                    'Support requested'
+                ],
+                transpired: [
+                    'Reviewed communication',
+                    'Assessed inquiry',
+                    'Prepared response'
+                ],
+                outcome: [
+                    'Response provided',
+                    'Information shared',
+                    'Follow-up pending'
+                ]
+            };
+            
+            return templates[section][index % templates[section].length];
+        }
+        
+        function getSpelling(word) {
+            const language = document.getElementById('language').value;
+            const spellings = {
+                'organized': language === 'canadian' ? 'organised' : 'organised',
+                'analyzed': language === 'canadian' ? 'analysed' : 'analysed',
+                'summarized': language === 'canadian' ? 'summarised' : 'summarised',
+                'recognized': language === 'canadian' ? 'recognised' : 'recognised',
+                'color': language === 'canadian' ? 'colour' : 'colour',
+                'center': language === 'canadian' ? 'centre' : 'centre',
+                'program': language === 'canadian' ? 'programme' : 'programme'
+            };
+            return spellings[word] || word;
+        }
+        
+        function generateTaskBullet(index) {
+            if (analysisData.activities && analysisData.activities[index]) {
+                return analysisData.activities[index];
+            }
+            
+            const defaults = [
+                'Conducted project analysis and requirements gathering',
+                'Developed implementation strategies and solutions',
+                'Coordinated with stakeholders on deliverables'
+            ];
+            
+            return defaults[index % defaults.length];
+        }
+        
+        // File Handling
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+        
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('dragover');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        }
+        
+        function handleFileSelect(e) {
+            handleFiles(e.target.files);
+        }
+        
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            
+            const file = files[0];
+            const fileName = file.name.toLowerCase();
+            const universalInput = document.getElementById('universalInput');
+            const existingContent = universalInput.value.trim();
+            
+            // Show loading
+            document.getElementById('loadingOverlay').classList.add('active');
+            
+            // Check if it's a text file that can be read directly
+            if (fileName.endsWith('.txt') || fileName.endsWith('.csv') || fileName.endsWith('.log')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                    
+                    // Append to existing content with separator
+                    const newContent = e.target.result;
+                    if (existingContent) {
+                        universalInput.value = existingContent + '\n\n' + '='.repeat(40) + '\n\n' + newContent;
+                    } else {
+                        universalInput.value = newContent;
+                    }
+                    
+                    handleInputChange({ target: universalInput });
+                    showStatus('File content added', 'success');
+                };
+                reader.onerror = function() {
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                    showStatus('Error reading file', 'error');
+                };
+                reader.readAsText(file);
+            } else {
+                // For ALL other file types (binary documents), create structured placeholder
+                setTimeout(() => {
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                    const extractedContent = `[Uploaded file: ${file.name}]
+
+Document Type: ${getDocumentType(fileName)}
+File Size: ${formatFileSize(file.size)}
+Upload Date: ${new Date().toLocaleString()}
+
+Content Analysis:
+This document has been uploaded for task generation. The system will analyze the document structure and generate appropriate task entries based on the document type and content.
+
+Key Activities Detected:
+- Document review and analysis
+- Content organization and processing  
+- Information extraction and synthesis
+- Quality assurance and validation
+
+Note: For more detailed content analysis, please copy and paste specific text sections from the document into the input area.`;
+
+                    // Append to existing content
+                    if (existingContent) {
+                        universalInput.value = existingContent + '\n\n' + '='.repeat(40) + '\n\n' + extractedContent;
+                    } else {
+                        universalInput.value = extractedContent;
+                    }
+                    
+                    handleInputChange({ target: universalInput });
+                    showStatus('Document added to input', 'success');
+                }, 800);
+            }
+        }
+        
+        function getDocumentType(fileName) {
+            if (fileName.endsWith('.pdf')) return 'PDF Document';
+            if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) return 'Word Document';
+            if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) return 'Excel Spreadsheet';
+            if (fileName.endsWith('.pptx') || fileName.endsWith('.ppt')) return 'PowerPoint Presentation';
+            if (fileName.endsWith('.txt')) return 'Text File';
+            return 'Unknown Document';
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        
+        // Output Modal Functions
+        function closeOutput() {
+            document.getElementById('outputModal').classList.remove('active');
+        }
+        
+        function copyOutput() {
+            const output = document.getElementById('outputText');
+            output.select();
+            document.execCommand('copy');
+            showStatus('Copied to clipboard!', 'success');
+        }
+        
+        function downloadOutput() {
+            const content = document.getElementById('outputText').value;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Clockwork_${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showStatus('Download started', 'success');
+        }
+        
+        function saveOutput() {
+            const content = document.getElementById('outputText').value;
+            const entry = {
+                id: Date.now(),
+                date: new Date().toISOString(),
+                type: contentType,
+                preview: content.substring(0, 100) + '...',
+                content: content
+            };
+            
+            savedEntries.push(entry);
+            localStorage.setItem('clockworkSavedEntries', JSON.stringify(savedEntries));
+            
+            showStatus('Entry saved', 'success');
+            updateSavedItems();
+        }
+        
+        function autoSaveOutput(content) {
+            if (autoSaveTimer) clearTimeout(autoSaveTimer);
+            
+            autoSaveTimer = setTimeout(() => {
+                const entry = {
+                    id: Date.now(),
+                    date: new Date().toISOString(),
+                    type: contentType,
+                    preview: content.substring(0, 100) + '...',
+                    content: content,
+                    autoSaved: true
+                };
+                
+                savedEntries.push(entry);
+                localStorage.setItem('clockworkSavedEntries', JSON.stringify(savedEntries));
+            }, 2000);
+        }
+        
+        // Saved Items Drawer
+        function openSavedDrawer() {
+            document.getElementById('savedDrawer').classList.add('open');
+            updateSavedItems();
+        }
+        
+        function closeSavedDrawer() {
+            document.getElementById('savedDrawer').classList.remove('open');
+        }
+        
+        function updateSavedItems() {
+            const container = document.getElementById('savedItems');
+            
+            if (savedEntries.length === 0) {
+                container.innerHTML = '<div class="preview-empty">No saved items yet</div>';
+                return;
+            }
+            
+            container.innerHTML = savedEntries.map(entry => `
+                <div class="saved-item" onclick="loadSavedEntry(${entry.id})">
+                    <div class="saved-item-date">${new Date(entry.date).toLocaleString()}</div>
+                    <div class="saved-item-preview">${entry.preview}</div>
+                </div>
+            `).join('');
+        }
+        
+        function loadSavedEntry(id) {
+            const entry = savedEntries.find(e => e.id === id);
+            if (entry) {
+                document.getElementById('outputText').value = entry.content;
+                document.getElementById('outputModal').classList.add('active');
+                closeSavedDrawer();
+            }
+        }
+        
+        function loadSavedData() {
+            const saved = localStorage.getItem('clockworkSavedEntries');
+            if (saved) {
+                savedEntries = JSON.parse(saved);
+            }
+        }
+        
+        // Quick Actions
+        function quickGenerate() {
+            generateEntries();
+        }
+        
+        function clearAll() {
+            const universalInput = document.getElementById('universalInput');
+            const hasContent = universalInput.value.trim().length > 0;
+            
+            if (hasContent) {
+                const choice = confirm('Clear all input and reset?\n\nTip: You can also manually select and delete specific parts of the text.');
+                if (choice) {
+                    universalInput.value = '';
+                    document.getElementById('inputWrapper').classList.remove('has-content');
+                    resetAnalysis();
+                    showStatus('Cleared', 'info');
+                }
+            } else {
+                showStatus('Nothing to clear', 'info');
+            }
+        }
+        
+        // Cache Management
+        function clearCache() {
+            if (confirm('Clear all cached data? This will remove saved entries and workflow memory.')) {
+                // Clear localStorage
+                localStorage.removeItem('clockworkSavedEntries');
+                localStorage.removeItem('clockworkMemory');
+                
+                // Reset application state
+                savedEntries = [];
+                workflowMemory = {};
+                
+                // Clear form data
+                document.getElementById('universalInput').value = '';
+                document.getElementById('inputWrapper').classList.remove('has-content');
+                resetAnalysis();
+                
+                // Update UI
+                updateSavedItems();
+                
+                showStatus('Cache cleared successfully', 'success');
+            }
+        }
+        
+        function forceRefresh() {
+            showStatus('Force refreshing page...', 'info');
+            setTimeout(() => {
+                // Add timestamp to URL to force cache bypass
+                const url = new URL(window.location);
+                url.searchParams.set('v', Date.now());
+                window.location.href = url.toString();
+            }, 1000);
+        }
+        
+        // Git Helper Functions
+        function showGitHelper() {
+            try {
+                const modal = document.getElementById('gitModal');
+                if (!modal) {
+                    console.error('Git modal not found');
+                    showStatus('Error: Git helper not available', 'error');
+                    return;
+                }
+                
+                modal.classList.add('active');
+                
+                // Reset commit message input
+                document.getElementById('commitMessage').value = '';
+                
+                // Update commands after modal is shown
+                setTimeout(() => {
+                    updateGitCommands();
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error showing git helper:', error);
+                showStatus('Error opening git helper', 'error');
+            }
+        }
+        
+        function closeGitHelper() {
+            document.getElementById('gitModal').classList.remove('active');
+        }
+        
+        function updateGitCommands() {
+            const commitInput = document.getElementById('commitMessage');
+            const commandsDiv = document.getElementById('gitCommands');
+            
+            // Update commands immediately
+            const updateCommands = () => {
+                const message = commitInput.value.trim() || 'Update Clockwork Elite';
+                commandsDiv.innerHTML = `
+                    <div style="color: #10b981; margin-bottom: 8px;">// Copy and paste these commands in Command Prompt/Terminal:</div>
+                    <div>cd "C:\\Users\\raymo\\projects\\clockwork-elite"</div>
+                    <div>git add index.html</div>
+                    <div>git commit -m "${message}"</div>
+                    <div>git push</div>
+                `;
+            };
+            
+            // Initial update
+            updateCommands();
+            
+            // Remove any existing listeners to prevent duplicates
+            commitInput.removeEventListener('input', updateCommands);
+            
+            // Add fresh listener
+            commitInput.addEventListener('input', updateCommands);
+        }
+        
+        function copyGitCommands() {
+            const message = document.getElementById('commitMessage').value.trim() || 'Update Clockwork Elite';
+            const commands = `cd "C:\\Users\\raymo\\projects\\clockwork-elite"
+git add index.html
+git commit -m "${message}"
+git push`;
+            
+            navigator.clipboard.writeText(commands).then(() => {
+                showStatus('Git commands copied to clipboard!', 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = commands;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showStatus('Git commands copied to clipboard!', 'success');
+            });
+        }
+        
+        function openProjectFolder() {
+            // For security reasons, browsers can't directly open folders
+            // So we'll show a helpful modal with instructions
+            showStatus('Opening folder instructions...', 'info');
+            
+            const instructions = `To open the project folder:
+            
+Windows:
+• Press Win + R
+• Type: C:\\Users\\raymo\\projects\\clockwork-elite
+• Press Enter
+
+Mac:
+• Press Cmd + Space
+• Type: ~/projects/clockwork-elite
+• Press Enter
+
+Or use the terminal commands in the Git Helper!`;
+            
+            alert(instructions);
+        }
+        
+        function openTerminal() {
+            const message = document.getElementById('commitMessage').value.trim() || 'Update Clockwork Elite';
+            
+            // Create a temporary batch file that opens terminal with commands
+            const batchContent = `@echo off
+cd /d "C:\\Users\\raymo\\projects\\clockwork-elite"
+echo.
+echo  ╔══════════════════════════════════════╗
+echo  ║   CLOCKWORK ELITE - READY TO PUSH   ║
+echo  ╚══════════════════════════════════════╝
+echo.
+echo Ready to push your changes!
+echo.
+echo Run these commands:
+echo   git add index.html
+echo   git commit -m "${message}"
+echo   git push
+echo.
+echo Or simply type: auto-push
+echo.
+cmd /k`;
+
+            // Create a data URL for download
+            const blob = new Blob([batchContent], { type: 'application/x-bat' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'push-clockwork.bat';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showStatus('Terminal script downloaded! Run it to open terminal.', 'success');
+            
+            // Also show instructions
+            setTimeout(() => {
+                alert('Terminal Helper Downloaded!\n\n1. Check your Downloads folder for "push-clockwork.bat"\n2. Double-click it to open terminal in the right folder\n3. The git commands will be displayed and ready to use!');
+            }, 500);
+        }
+        
+        function downloadTerminalScript() {
+            const message = document.getElementById('commitMessage').value.trim() || 'Update Clockwork Elite';
+            
+            // Create a more permanent script
+            const scriptContent = `@echo off
+:: Clockwork Elite Push Script
+:: Generated on ${new Date().toLocaleDateString()}
+
+cd /d "C:\\Users\\raymo\\projects\\clockwork-elite"
+
+echo.
+echo  ╔══════════════════════════════════════╗
+echo  ║      CLOCKWORK ELITE PUSH SCRIPT     ║
+echo  ╚══════════════════════════════════════╝
+echo.
+
+:: Show status
+echo 📊 Checking status...
+git status --short
+echo.
+
+:: Ask for confirmation
+set /p confirm=Push changes with message "${message}"? (y/n): 
+if /i not "%confirm%"=="y" exit /b
+
+:: Execute git commands
+echo.
+echo 📤 Adding files...
+git add index.html
+
+echo 💾 Committing...
+git commit -m "${message}"
+
+echo 🌐 Pushing to GitHub...
+git push
+
+echo.
+echo ✅ Complete! Check https://rpeart73.github.io/clockwork-elite/
+pause`;
+
+            const blob = new Blob([scriptContent], { type: 'application/x-bat' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `clockwork-push-${Date.now()}.bat`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showStatus('Push script downloaded!', 'success');
+        }
+        
+        function resetAnalysis() {
+            contentType = null;
+            analysisData = {};
+            detectedPOCs = [];
+            document.getElementById('contentPreview').innerHTML = 
+                '<div class="preview-empty">Content analysis will appear here as you type or paste</div>';
+            updateWorkflowState(WorkflowState.IDLE);
+        }
+        
+        // Utility Functions
+        function formatDate(date) {
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+            return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+        }
+        
+        function parseDate(dateStr) {
+            const today = new Date();
+            
+            if (dateStr.toLowerCase() === 'today') return today;
+            if (dateStr.toLowerCase() === 'yesterday') {
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                return yesterday;
+            }
+            if (dateStr.toLowerCase() === 'tomorrow') {
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                return tomorrow;
+            }
+            
+            const parsed = new Date(dateStr);
+            return isNaN(parsed.getTime()) ? null : parsed;
+        }
+        
+        function setDefaultDates() {
+            const today = new Date();
+            const start = new Date(today);
+            start.setDate(1);
+            
+            document.getElementById('startDate').value = start.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        }
+        
+        function calculateBusinessDays(startDate, endDate) {
+            let count = 0;
+            const current = new Date(startDate);
+            const end = new Date(endDate);
+            
+            while (current <= end) {
+                const dayOfWeek = current.getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Not Sunday (0) or Saturday (6)
+                    count++;
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            
+            return count;
+        }
+        
+        function validateTotalDays() {
+            const totalDaysInput = document.getElementById('totalDaysWorked');
+            const value = parseInt(totalDaysInput.value);
+            const max = parseInt(totalDaysInput.max);
+            
+            if (value > max) {
+                totalDaysInput.value = max;
+                showStatus(`Maximum ${max} business days allowed`, 'info');
+            }
+        }
+        
+        function showStatus(message, type = 'info') {
+            const status = document.createElement('div');
+            status.className = `status-message ${type}`;
+            status.textContent = message;
+            document.body.appendChild(status);
+            
+            setTimeout(() => {
+                status.remove();
+            }, 3000);
+        }
+        
+        function showHelp() {
+            const helpModal = document.createElement('div');
+            helpModal.className = 'output-modal active';
+            helpModal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">📚 Clockwork Elite Help & Documentation</h3>
+                        <button class="modal-close" onclick="this.closest('.output-modal').remove()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="display: grid; gap: 20px;">
+                            <div>
+                                <h4>⚡ Quick Start</h4>
+                                <ul style="line-height: 1.8;">
+                                    <li>Paste emails or type text to auto-detect content type</li>
+                                    <li>Smart suggestions appear in real-time</li>
+                                    <li>All entries are auto-saved</li>
+                                    <li>Original emails included in output</li>
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <h4>⌨️ Keyboard Shortcuts</h4>
+                                <ul style="line-height: 1.8;">
+                                    <li><kbd>Ctrl + Enter</kbd> - Generate Entry</li>
+                                    <li><kbd>Ctrl + S</kbd> - Save Output</li>
+                                    <li><kbd>Escape</kbd> - Close Modals</li>
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <h4>📖 Full Documentation</h4>
+                                <div style="display: grid; gap: 10px; margin-top: 10px;">
+                                    <a href="BEST_PRACTICES.md" target="_blank" class="modal-btn modal-btn-secondary" style="text-align: center; text-decoration: none;">
+                                        📋 Best Practices Guide
+                                    </a>
+                                    <a href="QUICK_REFERENCE.md" target="_blank" class="modal-btn modal-btn-secondary" style="text-align: center; text-decoration: none;">
+                                        ⚡ Quick Reference
+                                    </a>
+                                    <a href="CLAUDE.md" target="_blank" class="modal-btn modal-btn-secondary" style="text-align: center; text-decoration: none;">
+                                        🔧 Development Guide
+                                    </a>
+                                    <a href="https://github.com/rpeart73/clockwork-elite" target="_blank" class="modal-btn modal-btn-primary" style="text-align: center; text-decoration: none;">
+                                        🐙 View on GitHub
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #f3f4f6; padding: 16px; border-radius: 8px;">
+                                <strong>💡 Pro Tips:</strong>
+                                <ul style="margin-top: 8px; line-height: 1.8;">
+                                    <li>Include dates like "yesterday" or "Monday" for automatic POC detection</li>
+                                    <li>Enter only days actually worked for accurate task distribution</li>
+                                    <li>Use Natural Narrative style for professional case notes</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="modal-btn modal-btn-primary" onclick="this.closest('.output-modal').remove()">
+                            Got it!
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(helpModal);
+        }
+        
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    </script>
+</body>
+</html>
