@@ -937,8 +937,8 @@
                     <div class="file-upload-zone" id="uploadZone">
                         <input type="file" id="fileInput" style="display: none;" accept=".pdf,.doc,.docx,.txt,.xlsx,.xls,.pptx,.ppt" multiple>
                         <div class="upload-icon">📁</div>
-                        <div class="upload-text">Drop files here or click to upload</div>
-                        <div class="upload-subtext">PDF, Word, Excel, PowerPoint, Text files</div>
+                        <div class="upload-text">Drop files here or click to add</div>
+                        <div class="upload-subtext">Files will be added to existing content</div>
                     </div>
                     
                     <!-- Quick Actions -->
@@ -2019,6 +2019,8 @@
             
             const file = files[0];
             const fileName = file.name.toLowerCase();
+            const universalInput = document.getElementById('universalInput');
+            const existingContent = universalInput.value.trim();
             
             // Show loading
             document.getElementById('loadingOverlay').classList.add('active');
@@ -2028,8 +2030,17 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     document.getElementById('loadingOverlay').classList.remove('active');
-                    document.getElementById('universalInput').value = e.target.result;
-                    handleInputChange({ target: document.getElementById('universalInput') });
+                    
+                    // Append to existing content with separator
+                    const newContent = e.target.result;
+                    if (existingContent) {
+                        universalInput.value = existingContent + '\n\n' + '='.repeat(40) + '\n\n' + newContent;
+                    } else {
+                        universalInput.value = newContent;
+                    }
+                    
+                    handleInputChange({ target: universalInput });
+                    showStatus('File content added', 'success');
                 };
                 reader.onerror = function() {
                     document.getElementById('loadingOverlay').classList.remove('active');
@@ -2057,9 +2068,15 @@ Key Activities Detected:
 
 Note: For more detailed content analysis, please copy and paste specific text sections from the document into the input area.`;
 
-                    document.getElementById('universalInput').value = extractedContent;
-                    handleInputChange({ target: document.getElementById('universalInput') });
-                    showStatus('Document processed successfully', 'success');
+                    // Append to existing content
+                    if (existingContent) {
+                        universalInput.value = existingContent + '\n\n' + '='.repeat(40) + '\n\n' + extractedContent;
+                    } else {
+                        universalInput.value = extractedContent;
+                    }
+                    
+                    handleInputChange({ target: universalInput });
+                    showStatus('Document added to input', 'success');
                 }, 800);
             }
         }
@@ -2189,11 +2206,19 @@ Note: For more detailed content analysis, please copy and paste specific text se
         }
         
         function clearAll() {
-            if (confirm('Clear all input and reset?')) {
-                document.getElementById('universalInput').value = '';
-                document.getElementById('inputWrapper').classList.remove('has-content');
-                resetAnalysis();
-                showStatus('Cleared', 'info');
+            const universalInput = document.getElementById('universalInput');
+            const hasContent = universalInput.value.trim().length > 0;
+            
+            if (hasContent) {
+                const choice = confirm('Clear all input and reset?\n\nTip: You can also manually select and delete specific parts of the text.');
+                if (choice) {
+                    universalInput.value = '';
+                    document.getElementById('inputWrapper').classList.remove('has-content');
+                    resetAnalysis();
+                    showStatus('Cleared', 'info');
+                }
+            } else {
+                showStatus('Nothing to clear', 'info');
             }
         }
         
