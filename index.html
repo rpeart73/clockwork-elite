@@ -25,7 +25,7 @@
         
         /* Header */
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #000000;
             color: white;
             padding: 30px;
             border-radius: 12px;
@@ -217,7 +217,7 @@
         }
         
         .input-wrapper:focus-within {
-            border-color: #667eea;
+            border-color: #000000;
             background: white;
             box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
         }
@@ -274,13 +274,13 @@
         }
         
         .file-upload-zone:hover {
-            border-color: #667eea;
+            border-color: #000000;
             background: #f3f4f6;
         }
         
         .file-upload-zone.dragover {
-            border-color: #667eea;
-            background: #ede9fe;
+            border-color: #000000;
+            background: #f0f0f0;
         }
         
         .upload-icon {
@@ -370,15 +370,15 @@
         
         @media (min-width: 768px) {
             .quick-actions {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 8px;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
             }
         }
         
         @media (min-width: 1024px) {
             .quick-actions {
-                grid-template-columns: repeat(6, 1fr);
-                gap: 8px;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
             }
         }
         
@@ -399,9 +399,9 @@
         }
         
         .quick-action-btn.active {
-            background: #ede9fe;
-            border-color: #667eea;
-            color: #667eea;
+            background: #f0f0f0;
+            border-color: #000000;
+            color: #000000;
         }
         
         /* Content Preview */
@@ -475,7 +475,7 @@
         .generate-btn {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #000000;
             color: white;
             border: none;
             border-radius: 8px;
@@ -628,12 +628,12 @@
         }
         
         .modal-btn-primary {
-            background: #667eea;
+            background: #000000;
             color: white;
         }
         
         .modal-btn-primary:hover {
-            background: #5a67d8;
+            background: #333333;
         }
         
         .modal-btn-secondary {
@@ -704,7 +704,7 @@
             width: 40px;
             height: 40px;
             border: 3px solid #e5e7eb;
-            border-top-color: #667eea;
+            border-top-color: #000000;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -748,8 +748,8 @@
         
         .form-input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #000000;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
         }
         
         /* Saved Items Drawer */
@@ -889,7 +889,7 @@
         
         /* Focus Visible */
         :focus-visible {
-            outline: 2px solid #667eea;
+            outline: 2px solid #000000;
             outline-offset: 2px;
         }
     </style>
@@ -954,9 +954,6 @@
                         </button>
                         <button class="quick-action-btn" onclick="forceRefresh()">
                             ⚡ Force Refresh
-                        </button>
-                        <button class="quick-action-btn" onclick="openProjectFolder()">
-                            📁 Open Folder
                         </button>
                     </div>
                     
@@ -2334,25 +2331,6 @@ Note: For more detailed content analysis, please copy and paste specific text se
         
         // Git Helper Functions removed - Claude handles all git operations
         
-        function openProjectFolder() {
-            // For security reasons, browsers can't directly open folders
-            // So we'll show a helpful modal with instructions
-            showStatus('Opening folder instructions...', 'info');
-            
-            const instructions = `To open the project folder:
-            
-Windows:
-• Press Win + R
-• Type: C:\\Users\\raymo\\projects\\clockwork-elite
-• Press Enter
-
-Mac:
-• Press Cmd + Space
-• Type: ~/projects/clockwork-elite
-• Press Enter`;
-            
-            alert(instructions);
-        }
         
         function resetAnalysis() {
             contentType = null;
@@ -2574,7 +2552,7 @@ Mac:
                     <input type="password" id="apiKeyInput" placeholder="sk-ant-api..." />
                     <button onclick="saveAPIKey()">Save API Key</button>
                     <p style="margin-top: 10px; font-size: 12px; color: #666;">
-                        <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color: #667eea;">Get your API key here →</a>
+                        <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color: #000000;">Get your API key here →</a>
                     </p>
                 `;
                 messagesDiv.appendChild(setupDiv);
