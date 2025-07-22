@@ -1022,6 +1022,37 @@
                             </div>
                         </div>
                         
+                        <div class="form-field" id="distributionField" style="display: none;">
+                            <label class="form-label" for="distributionPattern">Work Distribution Pattern</label>
+                            <select id="distributionPattern" class="form-input">
+                                <option value="equal" selected>⚖️ Equal Distribution</option>
+                                <option value="frontLoaded">📈 Front-Loaded (More work early)</option>
+                                <option value="ascending">📊 Ascending (Gradual increase)</option>
+                                <option value="descending">📉 Descending (Gradual decrease)</option>
+                                <option value="backLoaded">📈 Back-Loaded (More work late)</option>
+                            </select>
+                            <div style="margin-top: 4px; font-size: 12px; color: #6b7280;">
+                                How should work be distributed across the timeline?
+                            </div>
+                        </div>
+                        
+                        <div class="form-field" id="timeOfDayField" style="display: none;">
+                            <label class="form-label" for="timeOfDay">Preferred Time of Day</label>
+                            <select id="timeOfDay" class="form-input">
+                                <option value="morning" selected>Morning (8 AM - 12 PM)</option>
+                                <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
+                                <option value="evening">Evening (5 PM - 8 PM)</option>
+                                <option value="mixed">Mixed Times</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-field" id="hoursPerDayField" style="display: none;">
+                            <label class="form-label" for="hoursPerDay">Hours Per Day</label>
+                            <input type="number" id="hoursPerDay" class="form-input" value="5" min="1" max="12" step="0.5">
+                            <div style="margin-top: 4px; font-size: 12px; color: #6b7280;">
+                                Average hours worked per day
+                            </div>
+                        </div>
                         
                         <div class="form-field" id="noteStyleField">
                             <label class="form-label" for="noteStyle">Note Style</label>
@@ -1128,9 +1159,6 @@
         
         <!-- Floating Action Buttons -->
         <div class="fab-container">
-            <button class="fab" onclick="showHelp()" title="Help">
-                ❓
-            </button>
             <button class="fab primary" onclick="quickGenerate()" title="Quick Generate" id="quickGenBtn" style="display: none;">
                 ⚡
             </button>
@@ -1623,6 +1651,10 @@
                 dateField.classList.add('visible');
                 totalDaysField.classList.add('visible');
                 noteStyleField.classList.remove('visible');
+                // Show task-specific fields
+                document.getElementById('distributionField').style.display = 'block';
+                document.getElementById('timeOfDayField').style.display = 'block';
+                document.getElementById('hoursPerDayField').style.display = 'block';
                 // Update business days when switching to task mode
                 updateBusinessDays();
             }
@@ -1893,10 +1925,13 @@
                 output += `${poc.dateStr} | ${serviceType} | ${hours} | Academic Support | ${studentName}\n\n`;
                 
                 if (noteStyle === 'natural') {
-                    // Natural Narrative Style - Use analysis data
+                    // Natural Narrative Style - Use ONLY actual content, no assumptions
+                    const content = document.getElementById('universalInput').value;
+                    const sentences = extractFactualSentences(content);
+                    
                     output += `OBJECTIVE:\n`;
-                    if (analysisData.sender) {
-                        output += `${studentName} contacted me`;
+                    if (sentences.objective.length > 0) {
+                        output += sentences.objective.join(' ');
                     } else {
                         output += `Received communication`;
                     }
@@ -1957,6 +1992,7 @@
             const startDate = document.getElementById('startDate').value || new Date().toISOString().split('T')[0];
             const endDate = document.getElementById('endDate').value || new Date().toISOString().split('T')[0];
             const totalDaysWorked = parseInt(document.getElementById('totalDaysWorked').value) || 0;
+            const distributionPattern = document.getElementById('distributionPattern').value || 'equal';
             const serviceType = 'Project Work'; // Hardcoded for tasks
             const detailLevel = document.getElementById('detailLevel').value;
             const bulletCount = detailLevel === 'basic' ? 3 : 
@@ -1982,27 +2018,25 @@
                 current.setDate(current.getDate() + 1);
             }
             
-            // Select days to use (evenly distributed)
-            const selectedDays = [];
-            if (daysToGenerate >= allBusinessDays.length) {
-                // Use all business days
-                selectedDays.push(...allBusinessDays);
-            } else {
-                // Distribute days evenly
-                const interval = allBusinessDays.length / daysToGenerate;
-                for (let i = 0; i < daysToGenerate; i++) {
-                    const index = Math.floor(i * interval);
-                    selectedDays.push(allBusinessDays[index]);
-                }
-            }
+            // Select days based on distribution pattern
+            const selectedDays = selectDaysWithDistribution(allBusinessDays, daysToGenerate, distributionPattern);
+            
+            // Get time preferences
+            const timeOfDay = document.getElementById('timeOfDay').value || 'morning';
+            const hoursPerDay = parseFloat(document.getElementById('hoursPerDay').value) || 5;
             
             // Generate tasks for selected days
             selectedDays.forEach(day => {
-                output += `${formatDate(day)} | 8:00 AM - 1:00 PM | 5 hours | ${serviceType} | Development\n`;
+                const timeSlot = getTimeSlot(timeOfDay, day);
+                output += `${formatDate(day)} | ${timeSlot} | ${hoursPerDay} hours | ${serviceType} | Development\n`;
                 
-                for (let i = 0; i < bulletCount; i++) {
-                    output += `- ${generateTaskBullet(i)}\n`;
-                }
+                // Generate bullets based on ACTUAL content
+                const content = document.getElementById('universalInput').value;
+                const taskBullets = generateAccurateTaskBullets(content, bulletCount);
+                
+                taskBullets.forEach(bullet => {
+                    output += `- ${bullet}\n`;
+                });
                 
                 output += '\n';
             });
@@ -2052,6 +2086,73 @@
                 'program': language === 'canadian' ? 'programme' : 'programme'
             };
             return spellings[word] || word;
+        }
+        
+        function getTimeSlot(timePreference, date) {
+            switch (timePreference) {
+                case 'morning':
+                    return '8:00 AM - 1:00 PM';
+                case 'afternoon':
+                    return '1:00 PM - 6:00 PM';
+                case 'evening':
+                    return '5:00 PM - 8:00 PM';
+                case 'mixed':
+                    // Alternate between morning and afternoon based on day
+                    const dayIndex = date.getDate() % 2;
+                    return dayIndex === 0 ? '8:00 AM - 1:00 PM' : '1:00 PM - 6:00 PM';
+                default:
+                    return '8:00 AM - 1:00 PM';
+            }
+        }
+        
+        function generateAccurateTaskBullets(content, count) {
+            const bullets = [];
+            
+            if (!content || content.trim() === '') {
+                // If no content, return generic project tasks
+                const genericTasks = [
+                    'Worked on project development',
+                    'Completed assigned tasks',
+                    'Made progress on deliverables',
+                    'Collaborated with team',
+                    'Updated project documentation',
+                    'Reviewed project requirements',
+                    'Tested functionality'
+                ];
+                return genericTasks.slice(0, count);
+            }
+            
+            // Extract actual tasks from content
+            const sentences = content.match(/[^.!?]+[.!?]+/g) || [];
+            const taskIndicators = [
+                /\b(implement|create|develop|build|design|write|test|review|update|fix|debug|optimize)\b/i,
+                /\b(complete|finish|deliver|submit|prepare|analyze|research|document)\b/i,
+                /\b(meet|discuss|collaborate|present|report|communicate)\b/i
+            ];
+            
+            // Find sentences that describe actual work
+            sentences.forEach(sentence => {
+                const cleaned = sentence.trim();
+                taskIndicators.forEach(pattern => {
+                    if (cleaned.match(pattern) && bullets.length < count) {
+                        // Use the actual sentence, just clean it up
+                        bullets.push(cleaned.replace(/^[-•]\s*/, ''));
+                    }
+                });
+            });
+            
+            // If we don't have enough bullets from content, add generic ones
+            const genericFillers = [
+                'Continued project work as outlined',
+                'Made progress on assigned tasks',
+                'Worked on project objectives'
+            ];
+            
+            while (bullets.length < count) {
+                bullets.push(genericFillers[bullets.length % genericFillers.length]);
+            }
+            
+            return bullets.slice(0, count);
         }
         
         function generateTaskBullet(index) {
@@ -2679,6 +2780,131 @@ Note: For more detailed content analysis, please copy and paste specific text se
             if (event.key === 'Enter') {
                 sendAIMessage();
             }
+        }
+        
+        // Fact Extraction Functions (No Hallucination)
+        function extractFactualSentences(content) {
+            // Extract only facts directly stated in the content
+            const sentences = {
+                objective: [],
+                activities: [],
+                outcome: [],
+                followUp: []
+            };
+            
+            // Split content into sentences
+            const allSentences = content.match(/[^.!?]+[.!?]+/g) || [];
+            
+            allSentences.forEach(sentence => {
+                const cleaned = sentence.trim();
+                
+                // Objective: Look for purpose indicators
+                if (cleaned.match(/\b(need|want|request|asking|require|concern|issue|problem|question about)\b/i)) {
+                    sentences.objective.push(cleaned);
+                }
+                
+                // Activities: Look for action verbs
+                if (cleaned.match(/\b(discussed|explained|reviewed|provided|shared|sent|helped|assisted|showed)\b/i)) {
+                    sentences.activities.push(cleaned);
+                }
+                
+                // Outcome: Look for result indicators
+                if (cleaned.match(/\b(understood|agreed|decided|will|plan to|going to|confirmed)\b/i)) {
+                    sentences.outcome.push(cleaned);
+                }
+                
+                // Follow-up: Look for future actions
+                if (cleaned.match(/\b(follow up|next step|deadline|due|submit|meet again|check in)\b/i)) {
+                    sentences.followUp.push(cleaned);
+                }
+            });
+            
+            return sentences;
+        }
+        
+        // Distribution Pattern Functions
+        function selectDaysWithDistribution(allDays, daysToSelect, pattern) {
+            if (daysToSelect >= allDays.length) {
+                return [...allDays];
+            }
+            
+            const selectedDays = [];
+            const totalDays = allDays.length;
+            
+            switch (pattern) {
+                case 'frontLoaded':
+                    // 60% in first third, 30% in middle third, 10% in last third
+                    const frontDays = Math.ceil(daysToSelect * 0.6);
+                    const middleDays = Math.ceil(daysToSelect * 0.3);
+                    const backDays = daysToSelect - frontDays - middleDays;
+                    
+                    // Select days from each section
+                    selectedDays.push(...selectFromSection(allDays, 0, Math.floor(totalDays / 3), frontDays));
+                    selectedDays.push(...selectFromSection(allDays, Math.floor(totalDays / 3), Math.floor(2 * totalDays / 3), middleDays));
+                    selectedDays.push(...selectFromSection(allDays, Math.floor(2 * totalDays / 3), totalDays, backDays));
+                    break;
+                    
+                case 'backLoaded':
+                    // 10% in first third, 30% in middle third, 60% in last third
+                    const earlyDays = Math.ceil(daysToSelect * 0.1);
+                    const midDays = Math.ceil(daysToSelect * 0.3);
+                    const lateDays = daysToSelect - earlyDays - midDays;
+                    
+                    selectedDays.push(...selectFromSection(allDays, 0, Math.floor(totalDays / 3), earlyDays));
+                    selectedDays.push(...selectFromSection(allDays, Math.floor(totalDays / 3), Math.floor(2 * totalDays / 3), midDays));
+                    selectedDays.push(...selectFromSection(allDays, Math.floor(2 * totalDays / 3), totalDays, lateDays));
+                    break;
+                    
+                case 'ascending':
+                    // Gradually increase frequency
+                    for (let i = 0; i < daysToSelect; i++) {
+                        // Use quadratic function to select days
+                        const position = Math.pow(i / (daysToSelect - 1), 2) * (totalDays - 1);
+                        const index = Math.round(position);
+                        selectedDays.push(allDays[Math.min(index, allDays.length - 1)]);
+                    }
+                    break;
+                    
+                case 'descending':
+                    // Gradually decrease frequency
+                    for (let i = 0; i < daysToSelect; i++) {
+                        // Use inverse quadratic function
+                        const position = (1 - Math.pow(1 - i / (daysToSelect - 1), 2)) * (totalDays - 1);
+                        const index = Math.round(position);
+                        selectedDays.push(allDays[Math.min(index, allDays.length - 1)]);
+                    }
+                    break;
+                    
+                case 'equal':
+                default:
+                    // Even distribution
+                    const interval = totalDays / daysToSelect;
+                    for (let i = 0; i < daysToSelect; i++) {
+                        const index = Math.floor(i * interval);
+                        selectedDays.push(allDays[index]);
+                    }
+                    break;
+            }
+            
+            // Sort by date and remove duplicates
+            return [...new Set(selectedDays)].sort((a, b) => a - b);
+        }
+        
+        function selectFromSection(allDays, startIdx, endIdx, count) {
+            const sectionDays = allDays.slice(startIdx, endIdx);
+            const selected = [];
+            
+            if (count >= sectionDays.length) {
+                return sectionDays;
+            }
+            
+            const interval = sectionDays.length / count;
+            for (let i = 0; i < count; i++) {
+                const index = Math.floor(i * interval);
+                selected.push(sectionDays[index]);
+            }
+            
+            return selected;
         }
         
         // Auto-save and Session Recovery Functions
