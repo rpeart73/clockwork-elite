@@ -229,6 +229,17 @@
             animation: processing-pulse 2s infinite;
         }
         
+        .input-wrapper.drag-over {
+            border-color: #000000;
+            border-width: 3px;
+            border-style: dashed;
+            background-color: #f3f4f6;
+        }
+        
+        .input-wrapper.drag-over .input-placeholder {
+            content: 'Drop screenshot here...';
+        }
+        
         @keyframes processing-pulse {
             0%, 100% { border-color: #10b981; }
             50% { border-color: #059669; }
@@ -1030,10 +1041,13 @@
                             </div>
                             <textarea 
                                 id="universalInput" 
-                                placeholder=""
+                                placeholder="Paste text, emails, or screenshots (Ctrl+V)..."
                                 spellcheck="true"
                             ></textarea>
                         </div>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 12px; color: #6b7280; text-align: center;">
+                        Tip: Paste screenshots directly (Ctrl+V) or drag & drop image files
                     </div>
                     
                     
@@ -1375,6 +1389,12 @@
             universalInput.addEventListener('input', debounce(handleInputChange, 300));
             universalInput.addEventListener('paste', handlePaste);
             
+            // Drag and drop support for screenshots
+            const inputWrapper = document.getElementById('inputWrapper');
+            inputWrapper.addEventListener('dragover', handleDragOver);
+            inputWrapper.addEventListener('drop', handleDrop);
+            inputWrapper.addEventListener('dragleave', handleDragLeave);
+            
             
             // Generate button
             document.getElementById('generateBtn').addEventListener('click', generateEntries);
@@ -1399,10 +1419,139 @@
         }
         
         function handlePaste(event) {
+            const items = event.clipboardData.items;
+            let hasImage = false;
+            
+            // Check for images in clipboard
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    hasImage = true;
+                    event.preventDefault();
+                    const blob = items[i].getAsFile();
+                    handleScreenshot(blob);
+                    break;
+                }
+            }
+            
+            // If no image, handle as text
+            if (!hasImage) {
+                const text = event.clipboardData.getData('text');
+                if (text) {
+                    event.preventDefault();
+                    event.target.value = text;
+                    handleInputChange({ target: event.target });
+                }
+            }
+        }
+        
+        async function handleScreenshot(blob) {
+            showStatus('Processing screenshot...', 'info');
+            
+            try {
+                // Create form data for OCR
+                const formData = new FormData();
+                formData.append('image', blob);
+                
+                // For now, show a message about screenshot support
+                // In a real implementation, this would call an OCR service
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Show preview of screenshot
+                    showScreenshotPreview(e.target.result);
+                    
+                    // Prompt user to describe the screenshot content
+                    setTimeout(() => {
+                        const description = prompt('Please describe the content in this screenshot:\n\nWhat text or information should be extracted?');
+                        if (description) {
+                            const universalInput = document.getElementById('universalInput');
+                            const existingContent = universalInput.value;
+                            
+                            const screenshotText = `\n\n[Screenshot Content]\n${description}\n`;
+                            
+                            if (existingContent) {
+                                universalInput.value = existingContent + screenshotText;
+                            } else {
+                                universalInput.value = screenshotText.trim();
+                            }
+                            
+                            handleInputChange({ target: universalInput });
+                            showStatus('Screenshot content added', 'success');
+                        }
+                    }, 500);
+                };
+                reader.readAsDataURL(blob);
+                
+            } catch (error) {
+                console.error('Error processing screenshot:', error);
+                showStatus('Error processing screenshot', 'error');
+            }
+        }
+        
+        function showScreenshotPreview(dataUrl) {
+            // Create a temporary preview modal
+            const modal = document.createElement('div');
+            modal.className = 'screenshot-preview-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                z-index: 10000;
+                max-width: 90%;
+                max-height: 90%;
+            `;
+            
+            modal.innerHTML = `
+                <h3 style="margin: 0 0 10px 0;">Screenshot Captured</h3>
+                <img src="${dataUrl}" style="max-width: 500px; max-height: 400px; border: 1px solid #ddd;">
+                <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">You'll be prompted to describe the content next.</p>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => modal.remove(), 3000);
+        }
+        
+        function handleDragOver(event) {
             event.preventDefault();
-            const text = event.clipboardData.getData('text');
-            event.target.value = text;
-            handleInputChange({ target: event.target });
+            event.stopPropagation();
+            
+            const wrapper = document.getElementById('inputWrapper');
+            wrapper.classList.add('drag-over');
+            
+            // Change cursor to indicate drop is allowed
+            event.dataTransfer.dropEffect = 'copy';
+        }
+        
+        function handleDragLeave(event) {
+            event.preventDefault();
+            const wrapper = document.getElementById('inputWrapper');
+            wrapper.classList.remove('drag-over');
+        }
+        
+        function handleDrop(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const wrapper = document.getElementById('inputWrapper');
+            wrapper.classList.remove('drag-over');
+            
+            const files = event.dataTransfer.files;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // Check if it's an image
+                if (file.type.startsWith('image/')) {
+                    handleScreenshot(file);
+                    break; // Only handle first image
+                }
+            }
         }
         
         // Content Analysis
