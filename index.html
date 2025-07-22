@@ -1410,13 +1410,13 @@
             
             // Only check medium indicators if no strong ones found and no dates already detected
             if (!hasStrongIndicator && analysis.dates.length === 0) {
-                followUpIndicators.medium.forEach(pattern => {
+                for (let pattern of followUpIndicators.medium) {
                     if (content.match(pattern) && detectedPOCs.length === 0) {
                         // Don't add extra POC, just note it's a follow-up
                         // This will keep it as single POC
                         break;
                     }
-                });
+                }
             }
             
             // 3. Check for meeting references
