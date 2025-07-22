@@ -360,6 +360,12 @@
             margin-bottom: 20px;
         }
         
+        @media (min-width: 768px) {
+            .quick-actions {
+                grid-template-columns: 1fr 1fr 1fr 1fr;
+            }
+        }
+        
         .quick-action-btn {
             padding: 12px 16px;
             border: 1px solid #e5e7eb;
@@ -923,6 +929,12 @@
                         </button>
                         <button class="quick-action-btn" onclick="clearAll()">
                             🗑️ Clear All
+                        </button>
+                        <button class="quick-action-btn" onclick="clearCache()">
+                            🔄 Clear Cache
+                        </button>
+                        <button class="quick-action-btn" onclick="forceRefresh()">
+                            ⚡ Force Refresh
                         </button>
                     </div>
                     
@@ -1928,6 +1940,39 @@ Note: For more detailed content analysis, please copy and paste specific text se
                 resetAnalysis();
                 showStatus('Cleared', 'info');
             }
+        }
+        
+        // Cache Management
+        function clearCache() {
+            if (confirm('Clear all cached data? This will remove saved entries and workflow memory.')) {
+                // Clear localStorage
+                localStorage.removeItem('clockworkSavedEntries');
+                localStorage.removeItem('clockworkMemory');
+                
+                // Reset application state
+                savedEntries = [];
+                workflowMemory = {};
+                
+                // Clear form data
+                document.getElementById('universalInput').value = '';
+                document.getElementById('inputWrapper').classList.remove('has-content');
+                resetAnalysis();
+                
+                // Update UI
+                updateSavedItems();
+                
+                showStatus('Cache cleared successfully', 'success');
+            }
+        }
+        
+        function forceRefresh() {
+            showStatus('Force refreshing page...', 'info');
+            setTimeout(() => {
+                // Add timestamp to URL to force cache bypass
+                const url = new URL(window.location);
+                url.searchParams.set('v', Date.now());
+                window.location.href = url.toString();
+            }, 1000);
         }
         
         function resetAnalysis() {
