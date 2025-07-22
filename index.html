@@ -1189,6 +1189,40 @@
             
             // Initialize dates
             setDefaultDates();
+            
+            // Add keyboard shortcuts
+            setupKeyboardShortcuts();
+        }
+        
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + Enter to generate
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    const generateBtn = document.getElementById('generateBtn');
+                    if (!generateBtn.disabled) {
+                        generateEntries();
+                    }
+                }
+                
+                // Ctrl/Cmd + S to save output
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    if (document.getElementById('outputModal').classList.contains('active')) {
+                        saveOutput();
+                    }
+                }
+                
+                // Escape to close modals
+                if (e.key === 'Escape') {
+                    if (document.getElementById('outputModal').classList.contains('active')) {
+                        closeOutput();
+                    } else if (document.getElementById('gitModal').classList.contains('active')) {
+                        closeGitHelper();
+                    } else if (document.getElementById('savedDrawer').classList.contains('open')) {
+                        closeSavedDrawer();
+                    }
+                }
+            });
         }
         
         // Event Listeners
@@ -1309,28 +1343,117 @@
                 sender: extractSender(content),
                 topics: extractTopics(content),
                 urgency: detectUrgency(content),
-                questions: extractQuestions(content)
+                questions: extractQuestions(content),
+                meetings: extractMeetings(content)
             };
             
-            // Create POCs from dates
-            detectedPOCs = analysis.dates.map((date, index) => ({
-                id: Date.now() + index,
-                date: date.date,
-                dateStr: date.formatted,
-                content: content,
-                selected: true
-            }));
+            // Detect multiple POCs from various indicators
+            detectedPOCs = [];
             
-            // If no dates found, create single POC
+            // 1. Add POCs from specific dates mentioned
+            analysis.dates.forEach((date, index) => {
+                detectedPOCs.push({
+                    id: Date.now() + index,
+                    date: date.date,
+                    dateStr: date.formatted,
+                    type: 'email',
+                    context: date.context,
+                    content: content,
+                    selected: true
+                });
+            });
+            
+            // 2. Smart POC detection - only add if truly indicates separate contact
+            const followUpIndicators = {
+                strong: [
+                    /following up on our (call|meeting|discussion) from/i,
+                    /as we discussed (yesterday|last week|on \w+day)/i,
+                    /per our (\w+day) (conversation|meeting)/i
+                ],
+                medium: [
+                    /following up|follow-up/i,
+                    /as discussed/i,
+                    /thank you for meeting/i
+                ]
+            };
+            
+            let hasStrongIndicator = false;
+            followUpIndicators.strong.forEach(pattern => {
+                const match = content.match(pattern);
+                if (match && !hasStrongIndicator) {
+                    hasStrongIndicator = true;
+                    // Extract date if possible, otherwise estimate
+                    const dateMatch = match[0].match(/yesterday|last week|Monday|Tuesday|Wednesday|Thursday|Friday/i);
+                    let previousDate = new Date();
+                    
+                    if (dateMatch) {
+                        if (dateMatch[0].toLowerCase() === 'yesterday') {
+                            previousDate.setDate(previousDate.getDate() - 1);
+                        } else if (dateMatch[0].toLowerCase() === 'last week') {
+                            previousDate.setDate(previousDate.getDate() - 7);
+                        }
+                    } else {
+                        previousDate.setDate(previousDate.getDate() - 2);
+                    }
+                    
+                    detectedPOCs.push({
+                        id: Date.now() + 100,
+                        date: previousDate,
+                        dateStr: formatDate(previousDate),
+                        type: 'Previous ' + (match[0].includes('call') ? 'call' : 'meeting'),
+                        context: match[0],
+                        content: content,
+                        selected: true
+                    });
+                }
+            });
+            
+            // Only check medium indicators if no strong ones found and no dates already detected
+            if (!hasStrongIndicator && analysis.dates.length === 0) {
+                followUpIndicators.medium.forEach(pattern => {
+                    if (content.match(pattern) && detectedPOCs.length === 0) {
+                        // Don't add extra POC, just note it's a follow-up
+                        // This will keep it as single POC
+                        break;
+                    }
+                });
+            }
+            
+            // 3. Check for meeting references
+            if (analysis.meetings.length > 0) {
+                analysis.meetings.forEach((meeting, index) => {
+                    detectedPOCs.push({
+                        id: Date.now() + 200 + index,
+                        date: meeting.date || new Date(),
+                        dateStr: formatDate(meeting.date || new Date()),
+                        type: 'meeting',
+                        context: meeting.context,
+                        content: content,
+                        selected: true
+                    });
+                });
+            }
+            
+            // 4. If still no POCs, create one for today
             if (detectedPOCs.length === 0) {
                 detectedPOCs.push({
                     id: Date.now(),
                     date: new Date(),
                     dateStr: formatDate(new Date()),
+                    type: 'email',
+                    context: 'Current email',
                     content: content,
                     selected: true
                 });
             }
+            
+            // Remove duplicates based on date
+            detectedPOCs = detectedPOCs.filter((poc, index, self) =>
+                index === self.findIndex((p) => p.dateStr === poc.dateStr)
+            );
+            
+            // Sort by date
+            detectedPOCs.sort((a, b) => a.date - b.date);
             
             return analysis;
         }
@@ -1425,6 +1548,27 @@
         function detectUrgency(content) {
             const urgentWords = content.match(/\b(urgent|asap|immediately|deadline|due)\b/gi);
             return urgentWords ? urgentWords.length : 0;
+        }
+        
+        function extractMeetings(content) {
+            const meetings = [];
+            const meetingPatterns = [
+                /(?:met|meeting|spoke|talked|discussed) (?:with |about |on ).*?(?:on |yesterday|today|Monday|Tuesday|Wednesday|Thursday|Friday)/gi,
+                /(?:Monday|Tuesday|Wednesday|Thursday|Friday|yesterday|today)'s (?:meeting|discussion|call)/gi,
+                /(?:office hours|zoom call|phone call|in-person meeting)/gi
+            ];
+            
+            meetingPatterns.forEach(pattern => {
+                const matches = content.matchAll(pattern);
+                for (let match of matches) {
+                    meetings.push({
+                        context: match[0],
+                        date: parseDate(match[0])
+                    });
+                }
+            });
+            
+            return meetings;
         }
         
         function extractActivities(content) {
@@ -1522,14 +1666,25 @@
                 document.getElementById('studentName').value = analysis.sender.split(' ')[0];
             }
             
-            if (analysis.dates.length > 0) {
+            if (detectedPOCs.length > 0) {
                 html += `<div class="detected-item">
                     <div class="detected-icon">📅</div>
                     <div class="detected-info">
-                        <div class="detected-label">POCs Detected</div>
-                        <div class="detected-value">${analysis.dates.length} date(s) found</div>
+                        <div class="detected-label">Points of Contact Detected</div>
+                        <div class="detected-value">${detectedPOCs.length} POC${detectedPOCs.length > 1 ? 's' : ''}</div>
                     </div>
                 </div>`;
+                
+                // Show each POC
+                detectedPOCs.forEach(poc => {
+                    html += `<div class="detected-item" style="margin-left: 20px; background: #e0e7ff;">
+                        <div class="detected-icon" style="font-size: 14px;">📌</div>
+                        <div class="detected-info">
+                            <div class="detected-label">${poc.type}</div>
+                            <div class="detected-value">${poc.dateStr}</div>
+                        </div>
+                    </div>`;
+                });
             }
             
             if (analysis.topics.length > 0) {
@@ -1701,22 +1856,49 @@
             const serviceType = document.getElementById('serviceType').value;
             const noteStyle = document.getElementById('noteStyle').value;
             const detailLevel = document.getElementById('detailLevel').value;
-            const bulletCount = detailLevel === 'basic' ? 3 : 
-                               detailLevel === 'comprehensive' ? 7 : 
-                               detailLevel === 'auto' ? 5 : 5;
+            
+            // Auto-adjust detail level based on content length
+            let bulletCount;
+            if (detailLevel === 'auto') {
+                const contentLength = document.getElementById('universalInput').value.length;
+                if (contentLength < 200) bulletCount = 3;
+                else if (contentLength < 500) bulletCount = 5;
+                else bulletCount = 7;
+            } else {
+                bulletCount = detailLevel === 'basic' ? 3 : 
+                             detailLevel === 'comprehensive' ? 7 : 5;
+            }
             
             let output = '';
             
+            // Add summary header if multiple POCs
+            if (detectedPOCs.length > 1) {
+                output += `// ${detectedPOCs.length} Points of Contact Detected\n`;
+                output += `// Student: ${studentName}\n`;
+                output += `// Service: ${serviceType}\n`;
+                output += '='.repeat(80) + '\n\n';
+            }
+            
             detectedPOCs.forEach((poc, index) => {
-                output += `${poc.dateStr} | ${serviceType} | 1 hour | Academic Support | ${studentName}\n\n`;
+                // Adjust hours based on POC type
+                const hours = poc.type === 'meeting' ? '1.5 hours' : '1 hour';
+                output += `${poc.dateStr} | ${serviceType} | ${hours} | Academic Support | ${studentName}\n\n`;
                 
                 if (noteStyle === 'natural') {
-                    // Natural Narrative Style - Simple and direct
+                    // Natural Narrative Style - Adapt based on POC type
                     output += `OBJECTIVE:\n`;
-                    output += `${studentName} contacted me about course requirements. They needed help understanding the assignment.\n\n`;
+                    if (poc.type === 'meeting') {
+                        output += `Met with ${studentName} to discuss course material. They had questions about upcoming assignments.\n\n`;
+                    } else {
+                        output += `${studentName} contacted me about course requirements. They needed help understanding the assignment.\n\n`;
+                    }
                     
                     output += `WHAT TRANSPIRED:\n`;
-                    output += `I read ${studentName}'s email and identified their questions. I wrote a response that addressed each point. We discussed the assignment requirements and deadlines.\n\n`;
+                    if (poc.type === 'meeting') {
+                        output += `We met and went over their questions. Reviewed the assignment requirements together. Clarified expectations and deadlines.\n\n`;
+                    } else {
+                        output += `I read ${studentName}'s email and identified their questions. I wrote a response that addressed each point. We discussed the assignment requirements and deadlines.\n\n`;
+                    }
                     
                     output += `OUTCOME/PLAN:\n`;
                     output += `I answered ${studentName}'s questions about the assignment. Sent them the information they needed. Will check for follow-up questions.\n`;
