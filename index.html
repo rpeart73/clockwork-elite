@@ -943,41 +943,6 @@
             white-space: nowrap;
         }
         
-        /* Floating Action Buttons */
-        .fab-container {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            z-index: 998;
-        }
-        
-        .fab {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            border: none;
-            background: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            transition: all 0.3s ease;
-        }
-        
-        .fab:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-        }
-        
-        .fab.primary {
-            background: #000000;
-            color: white;
-        }
         
         /* Responsive */
         @media (max-width: 768px) {
@@ -1162,9 +1127,11 @@
                         <div class="form-field" id="timeOfDayField" style="display: none;">
                             <label class="form-label" for="timeOfDay">Preferred Time of Day</label>
                             <select id="timeOfDay" class="form-input">
-                                <option value="morning" selected>Morning (8 AM - 12 PM)</option>
-                                <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
-                                <option value="evening">Evening (5 PM - 8 PM)</option>
+                                <option value="early_morning" selected>Early Morning (8:00 AM - 10:00 AM)</option>
+                                <option value="late_morning">Late Morning (10:00 AM - 12:00 PM)</option>
+                                <option value="early_afternoon">Early Afternoon (12:00 PM - 2:00 PM)</option>
+                                <option value="late_afternoon">Late Afternoon (2:00 PM - 4:00 PM)</option>
+                                <option value="full_day">Full Day (8:00 AM - 4:00 PM)</option>
                                 <option value="mixed">Mixed Times</option>
                             </select>
                         </div>
@@ -1229,7 +1196,9 @@
                                 <div class="preview-item">
                                     <span class="preview-label">Tasks to Generate:</span>
                                     <div class="preview-value-container">
+                                        <button class="adjust-btn" onclick="adjustTaskCount(-1)">-</button>
                                         <span class="preview-count" id="taskCount">0</span>
+                                        <button class="adjust-btn" onclick="adjustTaskCount(1)">+</button>
                                     </div>
                                 </div>
                                 <div class="preview-item">
@@ -1237,13 +1206,32 @@
                                     <span class="preview-value" id="totalHours">0</span>
                                 </div>
                                 <div class="preview-item">
+                                    <span class="preview-label">Hours Per Day:</span>
+                                    <span class="preview-value" id="hoursPerDayPreview">0</span>
+                                </div>
+                                <div class="preview-item">
                                     <span class="preview-label">Date Range:</span>
                                     <span class="preview-value" id="dateRangePreview">Not set</span>
+                                </div>
+                                <div class="preview-item">
+                                    <span class="preview-label">Distribution Pattern:</span>
+                                    <span class="preview-value" id="distributionPreview">Not set</span>
+                                </div>
+                                <div class="preview-item">
+                                    <span class="preview-label">Time of Day:</span>
+                                    <span class="preview-value" id="timeOfDayPreview">Not set</span>
                                 </div>
                             </div>
                             
                             <div class="preview-warning" id="previewWarning" style="display: none;">
                                 <span id="warningText"></span>
+                            </div>
+                            
+                            <!-- Confirm Button -->
+                            <div style="margin-top: 20px; text-align: center;">
+                                <button class="primary-button" onclick="confirmPreview()" id="confirmPreviewBtn" style="padding: 10px 24px;">
+                                    Confirm & Continue
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1296,12 +1284,6 @@
         </div>
         
         
-        <!-- Floating Action Buttons -->
-        <div class="fab-container">
-            <button class="fab primary" onclick="quickGenerate()" title="Quick Generate" id="quickGenBtn" style="display: none;">
-                Generate
-            </button>
-        </div>
     </div>
     
     <script>
@@ -1942,7 +1924,6 @@
             const stateText = document.getElementById('stateText');
             const progressBar = document.getElementById('progressBar');
             const generateBtn = document.getElementById('generateBtn');
-            const quickGenBtn = document.getElementById('quickGenBtn');
             
             switch(newState) {
                 case WorkflowState.IDLE:
@@ -1950,7 +1931,6 @@
                     progressBar.style.width = '0%';
                     generateBtn.textContent = 'Waiting for content...';
                     generateBtn.disabled = true;
-                    quickGenBtn.style.display = 'none';
                     break;
                     
                 case WorkflowState.ANALYZING:
@@ -1963,9 +1943,8 @@
                 case WorkflowState.READY:
                     stateText.textContent = 'Ready to generate';
                     progressBar.style.width = '60%';
-                    generateBtn.textContent = 'Generate Entry';
+                    generateBtn.textContent = 'Generate';
                     generateBtn.disabled = false;
-                    quickGenBtn.style.display = 'block';
                     break;
                     
                 case WorkflowState.GENERATING:
@@ -1978,7 +1957,7 @@
                 case WorkflowState.COMPLETE:
                     stateText.textContent = 'Generation complete';
                     progressBar.style.width = '100%';
-                    generateBtn.textContent = 'Generate Entry';
+                    generateBtn.textContent = 'Generate';
                     generateBtn.disabled = false;
                     break;
             }
@@ -2165,7 +2144,7 @@
             const selectedDays = selectDaysWithDistribution(allBusinessDays, daysToGenerate, distributionPattern);
             
             // Get time preferences
-            const timeOfDay = document.getElementById('timeOfDay').value || 'morning';
+            const timeOfDay = document.getElementById('timeOfDay').value || 'early_morning';
             const hoursPerDay = parseFloat(document.getElementById('hoursPerDay').value) || 5;
             
             // Generate tasks for selected days
@@ -2233,18 +2212,23 @@
         
         function getTimeSlot(timePreference, date) {
             switch (timePreference) {
-                case 'morning':
-                    return '8:00 AM - 1:00 PM';
-                case 'afternoon':
-                    return '1:00 PM - 6:00 PM';
-                case 'evening':
-                    return '5:00 PM - 8:00 PM';
+                case 'early_morning':
+                    return '8:00 AM - 10:00 AM';
+                case 'late_morning':
+                    return '10:00 AM - 12:00 PM';
+                case 'early_afternoon':
+                    return '12:00 PM - 2:00 PM';
+                case 'late_afternoon':
+                    return '2:00 PM - 4:00 PM';
+                case 'full_day':
+                    return '8:00 AM - 4:00 PM';
                 case 'mixed':
-                    // Alternate between morning and afternoon based on day
-                    const dayIndex = date.getDate() % 2;
-                    return dayIndex === 0 ? '8:00 AM - 1:00 PM' : '1:00 PM - 6:00 PM';
+                    // Rotate through different time slots based on day
+                    const dayIndex = date.getDate() % 4;
+                    const slots = ['8:00 AM - 10:00 AM', '10:00 AM - 12:00 PM', '12:00 PM - 2:00 PM', '2:00 PM - 4:00 PM'];
+                    return slots[dayIndex];
                 default:
-                    return '8:00 AM - 1:00 PM';
+                    return '8:00 AM - 12:00 PM';
             }
         }
         
@@ -2518,10 +2502,6 @@ Note: For more detailed content analysis, please copy and paste specific text se
             }
         }
         
-        // Quick Actions
-        function quickGenerate() {
-            generateEntries();
-        }
         
         function clearAll() {
             const universalInput = document.getElementById('universalInput');
@@ -2673,7 +2653,7 @@ Note: For more detailed content analysis, please copy and paste specific text se
                             <div>
                                 <h4>Keyboard Shortcuts</h4>
                                 <ul style="line-height: 1.8;">
-                                    <li><kbd>Ctrl + Enter</kbd> - Generate Entry</li>
+                                    <li><kbd>Ctrl + Enter</kbd> - Generate</li>
                                     <li><kbd>Ctrl + S</kbd> - Save Output</li>
                                     <li><kbd>Escape</kbd> - Close Modals</li>
                                 </ul>
@@ -2733,8 +2713,33 @@ Note: For more detailed content analysis, please copy and paste specific text se
         function adjustPOCCount(change) {
             confirmedPOCCount = Math.max(0, confirmedPOCCount + change);
             document.getElementById('pocCount').textContent = confirmedPOCCount;
+            isCountConfirmed = false; // Reset confirmation when count changes
+            updateGenerateButton();
+        }
+        
+        function adjustTaskCount(change) {
+            const totalDaysInput = document.getElementById('totalDaysWorked');
+            const currentValue = parseInt(totalDaysInput.value) || 0;
+            const newValue = Math.max(1, currentValue + change);
+            totalDaysInput.value = newValue;
+            
+            // Trigger validation and preview update
+            validateTotalDays();
+            updateGenerationPreview();
+        }
+        
+        function confirmPreview() {
             isCountConfirmed = true;
             updateGenerateButton();
+            
+            // Hide confirm button after confirmation
+            const confirmBtn = document.getElementById('confirmPreviewBtn');
+            if (confirmBtn) {
+                confirmBtn.style.display = 'none';
+            }
+            
+            // Auto-focus generate button
+            document.getElementById('generateBtn').focus();
         }
         
         function updateGenerationPreview() {
@@ -2784,6 +2789,13 @@ Note: For more detailed content analysis, please copy and paste specific text se
             }
             
             updateGenerateButton();
+            
+            // Reset confirmation when preview updates
+            isCountConfirmed = false;
+            const confirmBtn = document.getElementById('confirmPreviewBtn');
+            if (confirmBtn) {
+                confirmBtn.style.display = 'inline-block';
+            }
         }
         
         function updateGenerateButton() {
@@ -2796,13 +2808,21 @@ Note: For more detailed content analysis, please copy and paste specific text se
                 return;
             }
             
+            // Check if confirmation is required
+            if (!isCountConfirmed && (contentType === 'email' || contentType === 'document' || 
+                (contentType === 'generic' && (detectedPOCs.length > 0 || document.getElementById('totalDaysWorked').value)))) {
+                generateBtn.disabled = true;
+                generateBtn.textContent = 'Please confirm preview to continue';
+                return;
+            }
+            
             if (contentType === 'email' || (contentType === 'generic' && detectedPOCs.length > 0)) {
                 // For case notes
                 if (confirmedPOCCount === 0) {
                     generateBtn.disabled = true;
                     generateBtn.textContent = 'Adjust POC count to continue';
                 } else {
-                    generateBtn.disabled = false;
+                    generateBtn.disabled = !isCountConfirmed;
                     generateBtn.textContent = `Generate ${confirmedPOCCount} Case Note${confirmedPOCCount > 1 ? 's' : ''}`;
                 }
             } else if (contentType === 'document' || contentType === 'generic') {
@@ -2812,7 +2832,7 @@ Note: For more detailed content analysis, please copy and paste specific text se
                     generateBtn.disabled = true;
                     generateBtn.textContent = 'Set total days to continue';
                 } else {
-                    generateBtn.disabled = false;
+                    generateBtn.disabled = !isCountConfirmed;
                     generateBtn.textContent = `Generate ${totalDays} Task${totalDays > 1 ? 's' : ''}`;
                 }
             } else {
