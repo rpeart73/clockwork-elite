@@ -1070,16 +1070,13 @@
                     <!-- Quick Actions -->
                     <div class="quick-actions">
                         <button class="quick-action-btn" onclick="openSavedDrawer()">
-                            💾 Saved Items
+                            Saved Items
                         </button>
                         <button class="quick-action-btn" onclick="clearAll()">
-                            🗑️ Clear All
+                            Clear All
                         </button>
                         <button class="quick-action-btn" onclick="clearCache()">
-                            🔄 Clear Cache
-                        </button>
-                        <button class="quick-action-btn" onclick="forceRefresh()">
-                            ⚡ Force Refresh
+                            Clear Cache
                         </button>
                     </div>
                     
@@ -1152,9 +1149,9 @@
                             <label class="form-label" for="distributionPattern">Work Distribution Pattern</label>
                             <select id="distributionPattern" class="form-input">
                                 <option value="equal" selected>⚖️ Equal Distribution</option>
-                                <option value="frontLoaded">📈 Front-Loaded (More work early)</option>
-                                <option value="ascending">📊 Ascending (Gradual increase)</option>
-                                <option value="descending">📉 Descending (Gradual decrease)</option>
+                                <option value="frontLoaded">Front-Loaded (More work early)</option>
+                                <option value="ascending">Ascending (Gradual increase)</option>
+                                <option value="descending">Descending (Gradual decrease)</option>
                                 <option value="backLoaded">📈 Back-Loaded (More work late)</option>
                             </select>
                             <div style="margin-top: 4px; font-size: 12px; color: #6b7280;">
@@ -1246,7 +1243,7 @@
                             </div>
                             
                             <div class="preview-warning" id="previewWarning" style="display: none;">
-                                ⚠️ <span id="warningText"></span>
+                                <span id="warningText"></span>
                             </div>
                         </div>
                     </div>
@@ -1770,9 +1767,9 @@
         function updateUIForContentType(type) {
             // Update detected type
             document.getElementById('detectedType').innerHTML = 
-                type === 'email' ? '📧 Email <span class="confidence-badge">95%</span>' :
-                type === 'document' ? '📄 Document <span class="confidence-badge">90%</span>' :
-                '📝 Text <span class="confidence-badge">80%</span>';
+                type === 'email' ? 'Email <span class="confidence-badge">95%</span>' :
+                type === 'document' ? 'Document <span class="confidence-badge">90%</span>' :
+                'Text <span class="confidence-badge">80%</span>';
             
             // Update entry mode
             document.getElementById('entryMode').textContent = 
@@ -1846,7 +1843,7 @@
             
             if (analysis.sender) {
                 html += `<div class="detected-item">
-                    <div class="detected-icon">👤</div>
+                    <div class="detected-icon">POC</div>
                     <div class="detected-info">
                         <div class="detected-label">Student Name</div>
                         <div class="detected-value">${analysis.sender}</div>
@@ -1869,7 +1866,7 @@
                 // Show each POC
                 detectedPOCs.forEach(poc => {
                     html += `<div class="detected-item" style="margin-left: 20px; background: #e0e7ff;">
-                        <div class="detected-icon" style="font-size: 14px;">📌</div>
+                        <div class="detected-icon" style="font-size: 14px;">•</div>
                         <div class="detected-info">
                             <div class="detected-label">${poc.type}</div>
                             <div class="detected-value">${poc.dateStr}</div>
@@ -1901,7 +1898,7 @@
             
             if (analysis.activities.length > 0) {
                 html += `<div class="detected-item">
-                    <div class="detected-icon">✅</div>
+                    <div class="detected-icon">✓</div>
                     <div class="detected-info">
                         <div class="detected-label">Activities Found</div>
                         <div class="detected-value">${analysis.activities.length} activities</div>
@@ -1910,7 +1907,7 @@
             }
             
             html += `<div class="detected-item">
-                <div class="detected-icon">📊</div>
+                <div class="detected-icon">Stats</div>
                 <div class="detected-info">
                     <div class="detected-label">Complexity</div>
                     <div class="detected-value">${analysis.complexity.toUpperCase()}</div>
@@ -1930,7 +1927,7 @@
         function displayGenericAnalysis(analysis) {
             const preview = document.getElementById('contentPreview');
             preview.innerHTML = `<div class="detected-item">
-                <div class="detected-icon">📝</div>
+                <div class="detected-icon">Text</div>
                 <div class="detected-info">
                     <div class="detected-label">Content Size</div>
                     <div class="detected-value">${analysis.wordCount} words</div>
@@ -3013,7 +3010,7 @@ Note: For more detailed content analysis, please copy and paste specific text se
             modal.innerHTML = `
                 <div class="modal-content" style="max-width: 500px;">
                     <div class="modal-header">
-                        <h3 class="modal-title">💾 Recover Previous Session?</h3>
+                        <h3 class="modal-title">Recover Previous Session?</h3>
                         <button class="modal-close" onclick="this.closest('.output-modal').remove(); clearDraft()">&times;</button>
                     </div>
                     <div class="modal-body">
