@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Clockwork Elite - Intelligent Task & Case Note Generator v4.2 with AI</title>
+    <title>Clockwork Elite - Intelligent Task & Case Note Generator v4.2 with Nova</title>
     <style>
         * {
             box-sizing: border-box;
@@ -142,8 +142,13 @@
         
         .content-area {
             display: grid;
-            grid-template-columns: 1fr 400px;
+            grid-template-columns: 1fr 400px 0;
             min-height: 800px;
+            transition: grid-template-columns 0.3s ease;
+        }
+        
+        .content-area.with-ai {
+            grid-template-columns: 1fr 350px 380px;
         }
         
         @media (max-width: 1024px) {
@@ -706,7 +711,7 @@
             to { transform: rotate(360deg); }
         }
         
-        /* AI Assistant Panel */
+        /* Nova Assistant Panel */
         .ai-panel {
             background: white;
             border-left: 1px solid #e0e0e0;
@@ -1099,7 +1104,7 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>Clockwork Elite <span class="version-badge">v4.2 AI</span></h1>
+            <h1>Clockwork Elite <span class="version-badge">v4.2 Nova</span></h1>
             <p class="subtitle">Intelligent workflow automation with real-time analysis</p>
         </div>
         
@@ -1265,12 +1270,12 @@
                     </div>
                 </div>
                 
-                <!-- AI Assistant Panel -->
+                <!-- Nova Assistant Panel -->
                 <div class="ai-panel collapsed" id="aiPanel">
                     <div class="ai-header">
                         <h3>
-                            🤖 AI Assistant
-                            <span class="model-badge">Opus 4</span>
+                            ✨ Nova
+                            <span class="model-badge">Claude 3 Opus</span>
                         </h3>
                         <button class="ai-toggle" onclick="toggleAIPanel()">×</button>
                     </div>
@@ -1279,7 +1284,7 @@
                     </div>
                     <div class="ai-input-area">
                         <div class="ai-input-wrapper">
-                            <input type="text" class="ai-input" id="aiInput" placeholder="Ask for help with case notes..." onkeypress="handleAIKeypress(event)">
+                            <input type="text" class="ai-input" id="aiInput" placeholder="Ask Nova for help..." onkeypress="handleAIKeypress(event)">
                             <button class="ai-send" onclick="sendAIMessage()" id="aiSendBtn">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                                     <path d="m22 2-7 20-4-9-9-4Z"/>
@@ -1292,11 +1297,9 @@
             </div>
         </div>
         
-        <!-- AI FAB Button -->
-        <div class="ai-fab" onclick="toggleAIPanel()" title="AI Assistant">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1.07A8 8 0 0 1 13 22h-2A8 8 0 0 1 3.07 19H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73A2 2 0 1 1 12 2Z"/>
-            </svg>
+        <!-- Nova FAB Button -->
+        <div class="ai-fab" onclick="toggleAIPanel()" title="Nova Assistant">
+            ✨
         </div>
         
         <!-- Output Modal -->
@@ -1435,7 +1438,7 @@
             // Add keyboard shortcuts
             setupKeyboardShortcuts();
             
-            // Initialize AI Assistant
+            // Initialize Nova Assistant
             initializeAI();
         }
         
@@ -2935,7 +2938,7 @@ pause`;
             };
         }
         
-        // AI Assistant Functions
+        // Nova Assistant Functions
         let aiApiKey = null;
         let aiMessages = [];
         let aiPanelOpen = false;
@@ -2947,12 +2950,12 @@ pause`;
             if (!aiApiKey) {
                 aiMessages.push({
                     role: 'assistant',
-                    content: `Welcome! I'm your AI assistant for Clockwork Elite. To get started, I'll need your Claude API key.\n\nClick the button below to set it up.`
+                    content: `Welcome! I'm Nova, your AI assistant for Clockwork Elite. To get started, I'll need your Claude API key.\n\nClick the button below to set it up.`
                 });
             } else {
                 aiMessages.push({
                     role: 'assistant',
-                    content: 'Hi! I\'m powered by Claude Opus 4 - the most advanced AI model. I can help you write exceptional case notes with nuanced understanding and professional language.\n\nTry asking me:\n• "Analyze this email for key points"\n• "Help me write a comprehensive case note"\n• "What important details am I missing?"\n• "Make this more professional and detailed"'
+                    content: 'Hi! I\'m Nova, powered by Claude 3 Opus. I can help you write exceptional case notes with nuanced understanding and professional language.\n\nTry asking me:\n• "Analyze this email for key points"\n• "Help me write a comprehensive case note"\n• "What important details am I missing?"\n• "Make this more professional and detailed"'
                 });
             }
         }
@@ -3087,7 +3090,7 @@ pause`;
                         messages: [
                             {
                                 role: 'user',
-                                content: `You are an AI assistant for Clockwork Elite, a case note and task generator. Current context:\n\nContent: ${context.emailContent || 'No content yet'}\nStudent Name: ${context.studentName || 'Not specified'}\nDetected POCs: ${context.detectedPOCs}\nMode: ${context.mode}\n\nUser question: ${message}\n\nProvide helpful, specific advice about writing case notes, using the tool, or improving their content. Be concise and practical.`
+                                content: `You are Nova, an AI assistant for Clockwork Elite, a case note and task generator. Current context:\n\nContent: ${context.emailContent || 'No content yet'}\nStudent Name: ${context.studentName || 'Not specified'}\nDetected POCs: ${context.detectedPOCs}\nMode: ${context.mode}\n\nUser question: ${message}\n\nProvide helpful, specific advice about writing case notes, using the tool, or improving their content. Be concise and practical.`
                             }
                         ]
                     })
