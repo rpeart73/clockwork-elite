@@ -362,7 +362,15 @@
         
         @media (min-width: 768px) {
             .quick-actions {
-                grid-template-columns: 1fr 1fr 1fr 1fr;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .quick-actions {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 8px;
             }
         }
         
@@ -936,6 +944,12 @@
                         <button class="quick-action-btn" onclick="forceRefresh()">
                             ⚡ Force Refresh
                         </button>
+                        <button class="quick-action-btn" onclick="showGitHelper()">
+                            📤 Push Changes
+                        </button>
+                        <button class="quick-action-btn" onclick="openProjectFolder()">
+                            📁 Open Folder
+                        </button>
                     </div>
                     
                     <!-- Loading Overlay -->
@@ -1065,6 +1079,51 @@
             </div>
             <div class="drawer-content" id="savedItems">
                 <div class="preview-empty">No saved items yet</div>
+            </div>
+        </div>
+        
+        <!-- Git Helper Modal -->
+        <div class="output-modal" id="gitModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">📤 Push Changes to GitHub Pages</h3>
+                    <button class="modal-close" onclick="closeGitHelper()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="margin-top: 0;">Quick Options:</h4>
+                        <button class="modal-btn modal-btn-primary" onclick="copyGitCommands()" style="margin-right: 10px;">
+                            📋 Copy Git Commands
+                        </button>
+                        <button class="modal-btn modal-btn-secondary" onclick="openProjectFolder()">
+                            📁 Open Project Folder
+                        </button>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Commit Message:</label>
+                        <input type="text" id="commitMessage" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;" placeholder="Enter commit message (optional)">
+                    </div>
+                    
+                    <div style="background: #1f2937; color: #f3f4f6; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 13px; overflow-x: auto;" id="gitCommands">
+                        <div style="color: #10b981; margin-bottom: 8px;">// Copy and paste these commands in Command Prompt/Terminal:</div>
+                        <div>cd "C:\Users\raymo\projects\clockwork-elite"</div>
+                        <div>git add index.html</div>
+                        <div>git commit -m "Update Clockwork Elite"</div>
+                        <div>git push</div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding: 12px; background: #fef3c7; border-radius: 6px; font-size: 14px;">
+                        <strong>💡 Pro Tip:</strong> After pushing, your changes will appear at 
+                        <a href="https://rpeart73.github.io/clockwork-elite/" target="_blank" style="color: #0066cc;">https://rpeart73.github.io/clockwork-elite/</a> 
+                        in 1-5 minutes.
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-secondary" onclick="closeGitHelper()">
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -1973,6 +2032,75 @@ Note: For more detailed content analysis, please copy and paste specific text se
                 url.searchParams.set('v', Date.now());
                 window.location.href = url.toString();
             }, 1000);
+        }
+        
+        // Git Helper Functions
+        function showGitHelper() {
+            updateGitCommands();
+            document.getElementById('gitModal').classList.add('active');
+        }
+        
+        function closeGitHelper() {
+            document.getElementById('gitModal').classList.remove('active');
+        }
+        
+        function updateGitCommands() {
+            const commitInput = document.getElementById('commitMessage');
+            const commandsDiv = document.getElementById('gitCommands');
+            
+            commitInput.addEventListener('input', () => {
+                const message = commitInput.value.trim() || 'Update Clockwork Elite';
+                commandsDiv.innerHTML = `
+                    <div style="color: #10b981; margin-bottom: 8px;">// Copy and paste these commands in Command Prompt/Terminal:</div>
+                    <div>cd "C:\\Users\\raymo\\projects\\clockwork-elite"</div>
+                    <div>git add index.html</div>
+                    <div>git commit -m "${message}"</div>
+                    <div>git push</div>
+                `;
+            });
+        }
+        
+        function copyGitCommands() {
+            const message = document.getElementById('commitMessage').value.trim() || 'Update Clockwork Elite';
+            const commands = `cd "C:\\Users\\raymo\\projects\\clockwork-elite"
+git add index.html
+git commit -m "${message}"
+git push`;
+            
+            navigator.clipboard.writeText(commands).then(() => {
+                showStatus('Git commands copied to clipboard!', 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = commands;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showStatus('Git commands copied to clipboard!', 'success');
+            });
+        }
+        
+        function openProjectFolder() {
+            // For security reasons, browsers can't directly open folders
+            // So we'll show a helpful modal with instructions
+            showStatus('Opening folder instructions...', 'info');
+            
+            const instructions = `To open the project folder:
+            
+Windows:
+• Press Win + R
+• Type: C:\\Users\\raymo\\projects\\clockwork-elite
+• Press Enter
+
+Mac:
+• Press Cmd + Space
+• Type: ~/projects/clockwork-elite
+• Press Enter
+
+Or use the terminal commands in the Git Helper!`;
+            
+            alert(instructions);
         }
         
         function resetAnalysis() {
