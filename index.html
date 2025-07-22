@@ -1015,22 +1015,12 @@
                         
                         <div class="form-field" id="totalDaysField">
                             <label class="form-label" for="totalDaysWorked">Total Days Worked on Project</label>
-                            <input type="number" id="totalDaysWorked" class="form-input" placeholder="e.g., 8" min="1" max="365">
+                            <input type="number" id="totalDaysWorked" class="form-input" placeholder="e.g., 8" min="1" max="365" onchange="validateTotalDays()">
                             <div style="margin-top: 4px; font-size: 12px; color: #6b7280;">
                                 Enter actual days worked (tasks will be distributed across these days)
                             </div>
                         </div>
                         
-                        <div class="form-field" id="serviceTypeField">
-                            <label class="form-label" for="serviceType">Service Type</label>
-                            <select id="serviceType" class="form-input">
-                                <option value="Email Support">Email Support</option>
-                                <option value="Project Work">Project Work</option>
-                                <option value="Academic Support">Academic Support</option>
-                                <option value="Research Assistance">Research Assistance</option>
-                                <option value="Technical Support">Technical Support</option>
-                            </select>
-                        </div>
                         
                         <div class="form-field" id="noteStyleField">
                             <label class="form-label" for="noteStyle">Note Style</label>
@@ -1042,12 +1032,19 @@
                         </div>
                         
                         <div class="form-field" id="detailLevelField">
-                            <label class="form-label" for="detailLevel">Detail Level</label>
+                            <label class="form-label" for="detailLevel">Detail Depth</label>
                             <select id="detailLevel" class="form-input">
-                                <option value="auto">Auto (Based on content)</option>
-                                <option value="basic">Basic (3 bullets)</option>
-                                <option value="standard">Standard (5 bullets)</option>
-                                <option value="comprehensive">Comprehensive (7+ bullets)</option>
+                                <option value="basic">Basic (3 points per section)</option>
+                                <option value="standard" selected>Standard (5 points per section)</option>
+                                <option value="enhanced">Enhanced (7+ points per section)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-field" id="languageField">
+                            <label class="form-label" for="language">Language</label>
+                            <select id="language" class="form-input">
+                                <option value="canadian" selected>Canadian English</option>
+                                <option value="british">British English</option>
                             </select>
                         </div>
                     </div>
@@ -1622,47 +1619,50 @@
             const studentField = document.getElementById('studentNameField');
             const dateField = document.getElementById('dateRangeField');
             const totalDaysField = document.getElementById('totalDaysField');
-            const serviceTypeField = document.getElementById('serviceTypeField');
             const noteStyleField = document.getElementById('noteStyleField');
             
             if (type === 'email') {
                 studentField.classList.add('visible');
                 dateField.classList.remove('visible');
                 totalDaysField.classList.remove('visible');
-                serviceTypeField.classList.add('visible');
                 noteStyleField.classList.add('visible');
-                // Auto-map service type for email
-                document.getElementById('serviceType').value = 'Email Support';
             } else {
                 studentField.classList.remove('visible');
                 dateField.classList.add('visible');
                 totalDaysField.classList.add('visible');
-                serviceTypeField.classList.add('visible');
                 noteStyleField.classList.remove('visible');
-                // Default service type for tasks/documents
-                document.getElementById('serviceType').value = 'Project Work';
                 // Update business days when switching to task mode
                 updateBusinessDays();
             }
             
-            // Always show detail level
+            // Always show detail level and language
             document.getElementById('detailLevelField').classList.add('visible');
+            document.getElementById('languageField').classList.add('visible');
         }
         
         function updateBusinessDays() {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
             const infoSpan = document.getElementById('businessDaysInfo');
+            const totalDaysInput = document.getElementById('totalDaysWorked');
             
             if (startDate && endDate) {
                 const businessDays = calculateBusinessDays(startDate, endDate);
                 infoSpan.innerHTML = `<strong>${businessDays}</strong> business days in selected range`;
                 
+                // Update max allowed days
+                totalDaysInput.max = businessDays;
+                
+                // Validate current value
+                if (totalDaysInput.value && parseInt(totalDaysInput.value) > businessDays) {
+                    totalDaysInput.value = businessDays;
+                    showStatus(`Adjusted to maximum ${businessDays} business days`, 'info');
+                }
+                
                 // Set a reasonable default for total days worked (about 40% of business days)
-                const totalDaysInput = document.getElementById('totalDaysWorked');
                 if (!totalDaysInput.value) {
                     const suggestedDays = Math.max(1, Math.floor(businessDays * 0.4));
-                    totalDaysInput.placeholder = `e.g., ${suggestedDays}`;
+                    totalDaysInput.placeholder = `e.g., ${suggestedDays} (max: ${businessDays})`;
                 }
             } else {
                 infoSpan.textContent = 'Select dates to see business days';
@@ -1874,21 +1874,13 @@
         
         function generateCaseNotes() {
             const studentName = document.getElementById('studentName').value || 'the student';
-            const serviceType = document.getElementById('serviceType').value;
+            const serviceType = 'Email Support'; // Hardcoded for email case notes
             const noteStyle = document.getElementById('noteStyle').value;
             const detailLevel = document.getElementById('detailLevel').value;
             
-            // Auto-adjust detail level based on content length
-            let bulletCount;
-            if (detailLevel === 'auto') {
-                const contentLength = document.getElementById('universalInput').value.length;
-                if (contentLength < 200) bulletCount = 3;
-                else if (contentLength < 500) bulletCount = 5;
-                else bulletCount = 7;
-            } else {
-                bulletCount = detailLevel === 'basic' ? 3 : 
-                             detailLevel === 'comprehensive' ? 7 : 5;
-            }
+            // Set bullet count based on detail level
+            const bulletCount = detailLevel === 'basic' ? 3 : 
+                               detailLevel === 'enhanced' ? 7 : 5; // standard = 5
             
             let output = '';
             
@@ -1953,10 +1945,10 @@
             const startDate = document.getElementById('startDate').value || new Date().toISOString().split('T')[0];
             const endDate = document.getElementById('endDate').value || new Date().toISOString().split('T')[0];
             const totalDaysWorked = parseInt(document.getElementById('totalDaysWorked').value) || 0;
-            const serviceType = document.getElementById('serviceType').value;
+            const serviceType = 'Project Work'; // Hardcoded for tasks
             const detailLevel = document.getElementById('detailLevel').value;
             const bulletCount = detailLevel === 'basic' ? 3 : 
-                               detailLevel === 'comprehensive' ? 7 : 5;
+                               detailLevel === 'enhanced' ? 7 : 5; // standard = 5
             
             let output = '';
             const start = new Date(startDate);
@@ -2012,7 +2004,9 @@
         }
         
         function generateContextualBullet(section, index) {
-            // Simple, direct language
+            const language = document.getElementById('language').value;
+            
+            // Simple, direct language with spelling variations
             const templates = {
                 objective: [
                     'Student asked about the assignment',
@@ -2022,16 +2016,30 @@
                 transpired: [
                     'Read student email',
                     'Identified their questions',
-                    'Sent response with answers'
+                    language === 'canadian' ? 'Sent response with answers' : 'Sent response with answers'
                 ],
                 outcome: [
                     'Answered their questions',
                     'Gave them next steps',
-                    'Will check for follow-ups'
+                    language === 'canadian' ? 'Will check for follow-ups' : 'Will check for follow-ups'
                 ]
             };
             
             return templates[section][index % templates[section].length];
+        }
+        
+        function getSpelling(word) {
+            const language = document.getElementById('language').value;
+            const spellings = {
+                'organized': language === 'canadian' ? 'organised' : 'organised',
+                'analyzed': language === 'canadian' ? 'analysed' : 'analysed',
+                'summarized': language === 'canadian' ? 'summarised' : 'summarised',
+                'recognized': language === 'canadian' ? 'recognised' : 'recognised',
+                'color': language === 'canadian' ? 'colour' : 'colour',
+                'center': language === 'canadian' ? 'centre' : 'centre',
+                'program': language === 'canadian' ? 'programme' : 'programme'
+            };
+            return spellings[word] || word;
         }
         
         function generateTaskBullet(index) {
@@ -2556,6 +2564,17 @@ pause`;
             }
             
             return count;
+        }
+        
+        function validateTotalDays() {
+            const totalDaysInput = document.getElementById('totalDaysWorked');
+            const value = parseInt(totalDaysInput.value);
+            const max = parseInt(totalDaysInput.max);
+            
+            if (value > max) {
+                totalDaysInput.value = max;
+                showStatus(`Maximum ${max} business days allowed`, 'info');
+            }
         }
         
         function showStatus(message, type = 'info') {
