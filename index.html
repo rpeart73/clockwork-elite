@@ -923,7 +923,7 @@
                     <div class="universal-input">
                         <div class="input-wrapper" id="inputWrapper">
                             <div class="input-placeholder">
-                                Paste an email, upload a document, or type project information...
+                                Paste an email or type project information...
                             </div>
                             <textarea 
                                 id="universalInput" 
@@ -933,13 +933,6 @@
                         </div>
                     </div>
                     
-                    <!-- File Upload Zone -->
-                    <div class="file-upload-zone" id="uploadZone">
-                        <input type="file" id="fileInput" style="display: none;" accept=".pdf,.doc,.docx,.txt,.xlsx,.xls,.pptx,.ppt" multiple>
-                        <div class="upload-icon">📁</div>
-                        <div class="upload-text">Drop files here or click to add</div>
-                        <div class="upload-subtext">Files will be added to existing content</div>
-                    </div>
                     
                     <!-- Quick Actions -->
                     <div class="quick-actions">
@@ -1228,19 +1221,11 @@
         // Event Listeners
         function setupEventListeners() {
             const universalInput = document.getElementById('universalInput');
-            const uploadZone = document.getElementById('uploadZone');
-            const fileInput = document.getElementById('fileInput');
             
             // Universal input handling
             universalInput.addEventListener('input', debounce(handleInputChange, 300));
             universalInput.addEventListener('paste', handlePaste);
             
-            // File upload
-            uploadZone.addEventListener('click', () => fileInput.click());
-            uploadZone.addEventListener('dragover', handleDragOver);
-            uploadZone.addEventListener('dragleave', handleDragLeave);
-            uploadZone.addEventListener('drop', handleDrop);
-            fileInput.addEventListener('change', handleFileSelect);
             
             // Generate button
             document.getElementById('generateBtn').addEventListener('click', generateEntries);
