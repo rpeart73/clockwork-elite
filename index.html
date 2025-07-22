@@ -74,7 +74,7 @@
             font-size: 12px;
             font-weight: 600;
             margin-left: 15px;
-            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
         }
         
         /* Workflow State Bar */
@@ -182,18 +182,18 @@
             align-items: center;
             gap: 8px;
             padding: 6px 12px;
-            background: #f0fdf4;
-            border: 1px solid #86efac;
+            background: #f5f5f5;
+            border: 1px solid #000000;
             border-radius: 20px;
             font-size: 13px;
-            color: #16a34a;
+            color: #000000;
         }
         
         .smart-mode-dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            background: #16a34a;
+            background: #000000;
             animation: blink 2s infinite;
         }
         
@@ -355,8 +355,9 @@
             font-size: 11px;
             padding: 2px 8px;
             border-radius: 12px;
-            background: #e0e7ff;
-            color: #4338ca;
+            background: #f5f5f5;
+            color: #000000;
+            border: 1px solid #000000;
         }
         
         /* Quick Actions */
@@ -432,7 +433,8 @@
         .detected-icon {
             width: 32px;
             height: 32px;
-            background: #e0e7ff;
+            background: #f5f5f5;
+            border: 1px solid #000000;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -847,7 +849,7 @@
         }
         
         .fab.primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #000000;
             color: white;
         }
         
@@ -952,9 +954,6 @@
                         </button>
                         <button class="quick-action-btn" onclick="forceRefresh()">
                             ⚡ Force Refresh
-                        </button>
-                        <button class="quick-action-btn" onclick="showGitHelper()">
-                            📤 Push Changes
                         </button>
                         <button class="quick-action-btn" onclick="openProjectFolder()">
                             📁 Open Folder
@@ -1129,53 +1128,6 @@
             </div>
         </div>
         
-        <!-- Git Helper Modal -->
-        <div class="output-modal" id="gitModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">📤 Push Changes to GitHub Pages</h3>
-                    <button class="modal-close" onclick="closeGitHelper()">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4 style="margin-top: 0;">Quick Options:</h4>
-                        <button class="modal-btn modal-btn-primary" onclick="openTerminal()" style="margin-right: 10px;">
-                            🖥️ Open Terminal
-                        </button>
-                        <button class="modal-btn modal-btn-primary" onclick="copyGitCommands()" style="margin-right: 10px;">
-                            📋 Copy Commands
-                        </button>
-                        <button class="modal-btn modal-btn-secondary" onclick="downloadTerminalScript()">
-                            💾 Download Script
-                        </button>
-                    </div>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Commit Message:</label>
-                        <input type="text" id="commitMessage" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;" placeholder="Enter commit message (optional)">
-                    </div>
-                    
-                    <div style="background: #1f2937; color: #f3f4f6; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 13px; overflow-x: auto;" id="gitCommands">
-                        <div style="color: #10b981; margin-bottom: 8px;">// Copy and paste these commands in Command Prompt/Terminal:</div>
-                        <div>cd "C:\Users\raymo\projects\clockwork-elite"</div>
-                        <div>git add index.html</div>
-                        <div>git commit -m "Update Clockwork Elite"</div>
-                        <div>git push</div>
-                    </div>
-                    
-                    <div style="margin-top: 20px; padding: 12px; background: #fef3c7; border-radius: 6px; font-size: 14px;">
-                        <strong>💡 Pro Tip:</strong> After pushing, your changes will appear at 
-                        <a href="https://rpeart73.github.io/clockwork-elite/" target="_blank" style="color: #0066cc;">https://rpeart73.github.io/clockwork-elite/</a> 
-                        in 1-5 minutes.
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button class="modal-btn modal-btn-secondary" onclick="closeGitHelper()">
-                        Close
-                    </button>
-                </div>
-            </div>
-        </div>
         
         <!-- Floating Action Buttons -->
         <div class="fab-container">
@@ -1256,8 +1208,6 @@
                 if (e.key === 'Escape') {
                     if (document.getElementById('outputModal').classList.contains('active')) {
                         closeOutput();
-                    } else if (document.getElementById('gitModal').classList.contains('active')) {
-                        closeGitHelper();
                     } else if (document.getElementById('savedDrawer').classList.contains('open')) {
                         closeSavedDrawer();
                     }
@@ -1914,6 +1864,9 @@
                 
                 // Auto-save
                 autoSaveOutput(output);
+                
+                // Clear draft since work is complete
+                clearDraft();
             }, 1000);
         }
         
@@ -2379,82 +2332,7 @@ Note: For more detailed content analysis, please copy and paste specific text se
             }, 1000);
         }
         
-        // Git Helper Functions
-        function showGitHelper() {
-            try {
-                const modal = document.getElementById('gitModal');
-                if (!modal) {
-                    console.error('Git modal not found');
-                    showStatus('Error: Git helper not available', 'error');
-                    return;
-                }
-                
-                modal.classList.add('active');
-                
-                // Reset commit message input
-                document.getElementById('commitMessage').value = '';
-                
-                // Update commands after modal is shown
-                setTimeout(() => {
-                    updateGitCommands();
-                }, 100);
-                
-            } catch (error) {
-                console.error('Error showing git helper:', error);
-                showStatus('Error opening git helper', 'error');
-            }
-        }
-        
-        function closeGitHelper() {
-            document.getElementById('gitModal').classList.remove('active');
-        }
-        
-        function updateGitCommands() {
-            const commitInput = document.getElementById('commitMessage');
-            const commandsDiv = document.getElementById('gitCommands');
-            
-            // Update commands immediately
-            const updateCommands = () => {
-                const message = commitInput.value.trim() || 'Update Clockwork Elite';
-                commandsDiv.innerHTML = `
-                    <div style="color: #10b981; margin-bottom: 8px;">// Copy and paste these commands in Command Prompt/Terminal:</div>
-                    <div>cd "C:\\Users\\raymo\\projects\\clockwork-elite"</div>
-                    <div>git add index.html</div>
-                    <div>git commit -m "${message}"</div>
-                    <div>git push</div>
-                `;
-            };
-            
-            // Initial update
-            updateCommands();
-            
-            // Remove any existing listeners to prevent duplicates
-            commitInput.removeEventListener('input', updateCommands);
-            
-            // Add fresh listener
-            commitInput.addEventListener('input', updateCommands);
-        }
-        
-        function copyGitCommands() {
-            const message = document.getElementById('commitMessage').value.trim() || 'Update Clockwork Elite';
-            const commands = `cd "C:\\Users\\raymo\\projects\\clockwork-elite"
-git add index.html
-git commit -m "${message}"
-git push`;
-            
-            navigator.clipboard.writeText(commands).then(() => {
-                showStatus('Git commands copied to clipboard!', 'success');
-            }).catch(() => {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = commands;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                showStatus('Git commands copied to clipboard!', 'success');
-            });
-        }
+        // Git Helper Functions removed - Claude handles all git operations
         
         function openProjectFolder() {
             // For security reasons, browsers can't directly open folders
@@ -2471,101 +2349,9 @@ Windows:
 Mac:
 • Press Cmd + Space
 • Type: ~/projects/clockwork-elite
-• Press Enter
-
-Or use the terminal commands in the Git Helper!`;
+• Press Enter`;
             
             alert(instructions);
-        }
-        
-        function openTerminal() {
-            const message = document.getElementById('commitMessage').value.trim() || 'Update Clockwork Elite';
-            
-            // Create a temporary batch file that opens terminal with commands
-            const batchContent = `@echo off
-cd /d "C:\\Users\\raymo\\projects\\clockwork-elite"
-echo.
-echo  ╔══════════════════════════════════════╗
-echo  ║   CLOCKWORK ELITE - READY TO PUSH   ║
-echo  ╚══════════════════════════════════════╝
-echo.
-echo Ready to push your changes!
-echo.
-echo Run these commands:
-echo   git add index.html
-echo   git commit -m "${message}"
-echo   git push
-echo.
-echo Or simply type: auto-push
-echo.
-cmd /k`;
-
-            // Create a data URL for download
-            const blob = new Blob([batchContent], { type: 'application/x-bat' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'push-clockwork.bat';
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            showStatus('Terminal script downloaded! Run it to open terminal.', 'success');
-            
-            // Also show instructions
-            setTimeout(() => {
-                alert('Terminal Helper Downloaded!\n\n1. Check your Downloads folder for "push-clockwork.bat"\n2. Double-click it to open terminal in the right folder\n3. The git commands will be displayed and ready to use!');
-            }, 500);
-        }
-        
-        function downloadTerminalScript() {
-            const message = document.getElementById('commitMessage').value.trim() || 'Update Clockwork Elite';
-            
-            // Create a more permanent script
-            const scriptContent = `@echo off
-:: Clockwork Elite Push Script
-:: Generated on ${new Date().toLocaleDateString()}
-
-cd /d "C:\\Users\\raymo\\projects\\clockwork-elite"
-
-echo.
-echo  ╔══════════════════════════════════════╗
-echo  ║      CLOCKWORK ELITE PUSH SCRIPT     ║
-echo  ╚══════════════════════════════════════╝
-echo.
-
-:: Show status
-echo 📊 Checking status...
-git status --short
-echo.
-
-:: Ask for confirmation
-set /p confirm=Push changes with message "${message}"? (y/n): 
-if /i not "%confirm%"=="y" exit /b
-
-:: Execute git commands
-echo.
-echo 📤 Adding files...
-git add index.html
-
-echo 💾 Committing...
-git commit -m "${message}"
-
-echo 🌐 Pushing to GitHub...
-git push
-
-echo.
-echo ✅ Complete! Check https://rpeart73.github.io/clockwork-elite/
-pause`;
-
-            const blob = new Blob([scriptContent], { type: 'application/x-bat' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `clockwork-push-${Date.now()}.bat`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            showStatus('Push script downloaded!', 'success');
         }
         
         function resetAnalysis() {
@@ -2915,6 +2701,153 @@ pause`;
             if (event.key === 'Enter') {
                 sendAIMessage();
             }
+        }
+        
+        // Auto-save and Session Recovery Functions
+        function saveDraft() {
+            const content = document.getElementById('universalInput').value;
+            const studentName = document.getElementById('studentName').value;
+            const detailLevel = document.getElementById('detailLevel').value;
+            const noteStyle = document.getElementById('noteStyle').value;
+            const language = document.getElementById('language').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const totalDays = document.getElementById('totalDaysWorked').value;
+            
+            const draft = {
+                content,
+                studentName,
+                detailLevel,
+                noteStyle,
+                language,
+                startDate,
+                endDate,
+                totalDays,
+                timestamp: new Date().toISOString(),
+                detectedPOCs: detectedPOCs
+            };
+            
+            localStorage.setItem('clockworkDraft', JSON.stringify(draft));
+            lastSavedDraft = content;
+            
+            // Show subtle save indicator
+            showAutoSaveIndicator();
+        }
+        
+        function clearDraft() {
+            localStorage.removeItem('clockworkDraft');
+            lastSavedDraft = '';
+        }
+        
+        function checkForDraft() {
+            const draftStr = localStorage.getItem('clockworkDraft');
+            if (draftStr) {
+                try {
+                    const draft = JSON.parse(draftStr);
+                    const draftAge = new Date() - new Date(draft.timestamp);
+                    const oneHour = 60 * 60 * 1000;
+                    
+                    // Only offer to restore if draft is less than 1 hour old
+                    if (draftAge < oneHour && draft.content) {
+                        showDraftRecoveryModal(draft);
+                    } else {
+                        // Clear old drafts
+                        clearDraft();
+                    }
+                } catch (e) {
+                    console.error('Error parsing draft:', e);
+                    clearDraft();
+                }
+            }
+        }
+        
+        function showDraftRecoveryModal(draft) {
+            const modal = document.createElement('div');
+            modal.className = 'output-modal active';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h3 class="modal-title">💾 Recover Previous Session?</h3>
+                        <button class="modal-close" onclick="this.closest('.output-modal').remove(); clearDraft()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>We found an unsaved draft from ${getTimeSince(draft.timestamp)}. Would you like to restore it?</p>
+                        <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 200px; overflow-y: auto;">
+                            <strong>Preview:</strong><br>
+                            ${draft.content.substring(0, 300)}${draft.content.length > 300 ? '...' : ''}
+                        </div>
+                        <div class="modal-actions" style="justify-content: center;">
+                            <button class="modal-btn modal-btn-secondary" onclick="this.closest('.output-modal').remove(); clearDraft()">
+                                Discard
+                            </button>
+                            <button class="modal-btn modal-btn-primary" onclick="restoreDraft(${JSON.stringify(draft).replace(/"/g, '&quot;')}); this.closest('.output-modal').remove()">
+                                Restore Draft
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function restoreDraft(draft) {
+            document.getElementById('universalInput').value = draft.content;
+            document.getElementById('studentName').value = draft.studentName || '';
+            document.getElementById('detailLevel').value = draft.detailLevel || 'standard';
+            document.getElementById('noteStyle').value = draft.noteStyle || 'natural';
+            document.getElementById('language').value = draft.language || 'canadian';
+            document.getElementById('startDate').value = draft.startDate || '';
+            document.getElementById('endDate').value = draft.endDate || '';
+            document.getElementById('totalDaysWorked').value = draft.totalDays || '';
+            
+            // Restore POCs if available
+            if (draft.detectedPOCs && draft.detectedPOCs.length > 0) {
+                detectedPOCs = draft.detectedPOCs;
+            }
+            
+            // Trigger analysis
+            handleInputChange({ target: document.getElementById('universalInput') });
+            
+            showStatus('Draft restored successfully!', 'success');
+        }
+        
+        function getTimeSince(timestamp) {
+            const minutes = Math.floor((new Date() - new Date(timestamp)) / 60000);
+            if (minutes < 1) return 'just now';
+            if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            const hours = Math.floor(minutes / 60);
+            return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+        }
+        
+        function showAutoSaveIndicator() {
+            const indicator = document.createElement('div');
+            indicator.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                background: #000000;
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 13px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+                z-index: 1000;
+            `;
+            indicator.innerHTML = '✓ Draft saved';
+            document.body.appendChild(indicator);
+            
+            // Fade in
+            setTimeout(() => indicator.style.opacity = '1', 10);
+            
+            // Fade out and remove
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+                setTimeout(() => indicator.remove(), 300);
+            }, 2000);
         }
     </script>
 </body>
