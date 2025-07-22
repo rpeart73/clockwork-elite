@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Clockwork Elite - Intelligent Task & Case Note Generator v4.2</title>
+    <meta name="version" content="4.2.3">
+    <meta name="last-updated" content="2025-01-22">
     <style>
         * {
             box-sizing: border-box;
@@ -989,8 +991,11 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>Clockwork Elite <span class="version-badge">v4.2</span></h1>
+            <h1>Clockwork Elite <span class="version-badge">v4.2.3</span></h1>
             <p class="subtitle">Intelligent workflow automation with real-time analysis</p>
+            <div style="position: absolute; bottom: 5px; right: 10px; font-size: 11px; opacity: 0.7;">
+                Last updated: Jan 22, 2025 | <span id="deploymentStatus" style="cursor: pointer;" onclick="verifyDeployment()">Verify</span>
+            </div>
         </div>
         
         <!-- Workflow State Bar -->
@@ -2522,24 +2527,51 @@ Note: For more detailed content analysis, please copy and paste specific text se
         
         // Cache Management
         function clearCache() {
-            if (confirm('Clear all cached data? This will remove saved entries and workflow memory.')) {
-                // Clear localStorage
-                localStorage.removeItem('clockworkSavedEntries');
-                localStorage.removeItem('clockworkMemory');
+            if (confirm('Obliterate all cache? This will force a complete refresh.')) {
+                // Complete cache obliteration
+                // 1. Clear all localStorage
+                localStorage.clear();
+                
+                // 2. Clear all sessionStorage
+                sessionStorage.clear();
+                
+                // 3. Clear Service Worker caches if available
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        names.forEach(name => {
+                            caches.delete(name);
+                            console.log('Deleted cache:', name);
+                        });
+                    });
+                }
+                
+                // 4. Clear cookies for this domain
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                });
+                
+                // 5. Unregister service workers
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let registration of registrations) {
+                            registration.unregister();
+                        }
+                    });
+                }
                 
                 // Reset application state
                 savedEntries = [];
                 workflowMemory = {};
                 
-                // Clear form data
-                document.getElementById('universalInput').value = '';
-                document.getElementById('inputWrapper').classList.remove('has-content');
-                resetAnalysis();
+                // Show status and force reload
+                showStatus('Cache obliterated! Forcing refresh...', 'success');
                 
-                // Update UI
-                updateSavedItems();
-                
-                showStatus('Cache cleared successfully', 'success');
+                // Force reload with cache bypass
+                setTimeout(() => {
+                    // Add timestamp to force bypass cache
+                    const newUrl = window.location.pathname + '?cachebust=' + Date.now() + '&verify=true';
+                    window.location.replace(newUrl);
+                }, 1500);
             }
         }
         
@@ -3112,6 +3144,68 @@ Note: For more detailed content analysis, please copy and paste specific text se
                 setTimeout(() => indicator.remove(), 300);
             }, 2000);
         }
+        
+        // Deployment Verification
+        function verifyDeployment() {
+            const expectedVersion = '4.2.3';
+            const lastUpdated = '2025-01-22';
+            const keyFeatures = [
+                { name: 'Version 4.2.3', check: () => document.querySelector('.version-badge')?.textContent === 'v4.2.3' },
+                { name: 'Confirm button exists', check: () => document.getElementById('confirmPreviewBtn') !== null },
+                { name: 'No Force Refresh function', check: () => typeof forceRefresh === 'undefined' },
+                { name: 'Work hours 8-4 PM', check: () => document.querySelector('option[value="early_morning"]')?.textContent.includes('8:00 AM') },
+                { name: 'Task count adjustment', check: () => typeof adjustTaskCount === 'function' },
+                { name: 'No emoji icons', check: () => !document.querySelector('.quick-action-btn')?.innerHTML.includes('💾') },
+                { name: 'Generate button (not Entry)', check: () => !document.body.innerHTML.includes('Generate Entry') || document.body.innerHTML.includes('Generate</button>') }
+            ];
+            
+            let passed = 0;
+            let report = `Clockwork Elite v${expectedVersion} Deployment Verification\n`;
+            report += `Last Updated: ${lastUpdated}\n`;
+            report += `Current URL: ${window.location.href}\n\n`;
+            
+            keyFeatures.forEach(feature => {
+                try {
+                    const result = feature.check();
+                    passed += result ? 1 : 0;
+                    report += `${result ? '✅' : '❌'} ${feature.name}\n`;
+                } catch (e) {
+                    report += `❌ ${feature.name} (Error: ${e.message})\n`;
+                }
+            });
+            
+            report += `\nResult: ${passed}/${keyFeatures.length} checks passed\n\n`;
+            
+            if (passed === keyFeatures.length) {
+                report += '🎉 SUCCESS! You have the latest version.';
+                showStatus('✅ Latest version confirmed!', 'success');
+            } else {
+                report += '⚠️ Some features are missing or outdated.\n\n';
+                report += 'To fix this:\n';
+                report += '1. Click the "Clear Cache" button above\n';
+                report += '2. Or manually: Ctrl+F5 (Windows) / Cmd+Shift+R (Mac)\n';
+                report += '3. Or visit: ' + window.location.pathname + '?cachebust=' + Date.now();
+                showStatus('⚠️ Updates available - please clear cache', 'warning');
+            }
+            
+            console.log(report);
+            alert(report);
+            
+            return passed === keyFeatures.length;
+        }
+        
+        // Auto-verify if URL has verify parameter
+        window.addEventListener('load', function() {
+            if (window.location.search.includes('verify')) {
+                setTimeout(() => {
+                    verifyDeployment();
+                    // Remove verify parameter from URL without reload
+                    const url = new URL(window.location);
+                    url.searchParams.delete('verify');
+                    window.history.replaceState({}, document.title, url.pathname);
+                }, 500);
+            }
+        });
     </script>
 </body>
 </html>
