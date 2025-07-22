@@ -1440,10 +1440,16 @@
                 });
             }
             
-            // Remove duplicates based on date
-            detectedPOCs = detectedPOCs.filter((poc, index, self) =>
-                index === self.findIndex((p) => p.dateStr === poc.dateStr)
-            );
+            // Remove duplicates - keep the most specific POC for each date
+            const uniquePOCs = new Map();
+            detectedPOCs.forEach(poc => {
+                const dateKey = poc.dateStr;
+                if (!uniquePOCs.has(dateKey) || poc.type !== 'email') {
+                    // Prefer meeting/call over email for the same date
+                    uniquePOCs.set(dateKey, poc);
+                }
+            });
+            detectedPOCs = Array.from(uniquePOCs.values());
             
             // Sort by date
             detectedPOCs.sort((a, b) => a.date - b.date);
@@ -1898,23 +1904,32 @@
                 output += `${poc.dateStr} | ${serviceType} | ${hours} | Academic Support | ${studentName}\n\n`;
                 
                 if (noteStyle === 'natural') {
-                    // Natural Narrative Style - Adapt based on POC type
+                    // Natural Narrative Style - Use analysis data
                     output += `OBJECTIVE:\n`;
-                    if (poc.type === 'meeting') {
-                        output += `Met with ${studentName} to discuss course material. They had questions about upcoming assignments.\n\n`;
+                    if (analysisData.sender) {
+                        output += `${studentName} contacted me`;
                     } else {
-                        output += `${studentName} contacted me about course requirements. They needed help understanding the assignment.\n\n`;
+                        output += `Received communication`;
                     }
+                    
+                    if (analysisData.topics && analysisData.topics.length > 0) {
+                        output += ` regarding ${analysisData.topics.join(', ')}`;
+                    }
+                    output += `.\n\n`;
                     
                     output += `WHAT TRANSPIRED:\n`;
-                    if (poc.type === 'meeting') {
-                        output += `We met and went over their questions. Reviewed the assignment requirements together. Clarified expectations and deadlines.\n\n`;
-                    } else {
-                        output += `I read ${studentName}'s email and identified their questions. I wrote a response that addressed each point. We discussed the assignment requirements and deadlines.\n\n`;
+                    output += `Reviewed the ${poc.type === 'email' ? 'email' : 'communication'}`;
+                    if (analysisData.questions > 0) {
+                        output += ` which contained ${analysisData.questions} question${analysisData.questions > 1 ? 's' : ''}`;
                     }
+                    output += `. Provided response addressing the points raised.\n\n`;
                     
                     output += `OUTCOME/PLAN:\n`;
-                    output += `I answered ${studentName}'s questions about the assignment. Sent them the information they needed. Will check for follow-up questions.\n`;
+                    output += `Responded to inquiry. `;
+                    if (analysisData.urgency > 0) {
+                        output += `Matter appeared time-sensitive. `;
+                    }
+                    output += `Will monitor for follow-up.\n`;
                 } else {
                     // Bullet Point Style (existing)
                     output += `OBJECTIVE:\n`;
@@ -1931,6 +1946,14 @@
                     for (let i = 0; i < bulletCount; i++) {
                         output += `• ${generateContextualBullet('outcome', i)}\n`;
                     }
+                }
+                
+                // Add email verbatim after divider
+                if (poc.content && contentType === 'email') {
+                    output += '\n\n' + '-'.repeat(80) + '\n';
+                    output += 'ORIGINAL EMAIL:\n\n';
+                    output += poc.content.trim();
+                    output += '\n' + '-'.repeat(80);
                 }
                 
                 if (index < detectedPOCs.length - 1) {
@@ -2006,22 +2029,22 @@
         function generateContextualBullet(section, index) {
             const language = document.getElementById('language').value;
             
-            // Simple, direct language with spelling variations
+            // Generic, factual statements
             const templates = {
                 objective: [
-                    'Student asked about the assignment',
-                    'Email about course requirements',
-                    'Question about project deadline'
+                    'Student contacted instructor',
+                    'Inquiry received',
+                    'Support requested'
                 ],
                 transpired: [
-                    'Read student email',
-                    'Identified their questions',
-                    language === 'canadian' ? 'Sent response with answers' : 'Sent response with answers'
+                    'Reviewed communication',
+                    'Assessed inquiry',
+                    'Prepared response'
                 ],
                 outcome: [
-                    'Answered their questions',
-                    'Gave them next steps',
-                    language === 'canadian' ? 'Will check for follow-ups' : 'Will check for follow-ups'
+                    'Response provided',
+                    'Information shared',
+                    'Follow-up pending'
                 ]
             };
             
