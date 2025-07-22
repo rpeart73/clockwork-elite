@@ -1005,8 +1005,19 @@
                         <div class="form-field" id="dateRangeField">
                             <label class="form-label">Date Range</label>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                                <input type="date" id="startDate" class="form-input">
-                                <input type="date" id="endDate" class="form-input">
+                                <input type="date" id="startDate" class="form-input" onchange="updateBusinessDays()">
+                                <input type="date" id="endDate" class="form-input" onchange="updateBusinessDays()">
+                            </div>
+                            <div style="margin-top: 8px; font-size: 13px; color: #6b7280;">
+                                <span id="businessDaysInfo">Select dates to see business days</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-field" id="totalDaysField">
+                            <label class="form-label" for="totalDaysWorked">Total Days Worked on Project</label>
+                            <input type="number" id="totalDaysWorked" class="form-input" placeholder="e.g., 8" min="1" max="365">
+                            <div style="margin-top: 4px; font-size: 12px; color: #6b7280;">
+                                Enter actual days worked (tasks will be distributed across these days)
                             </div>
                         </div>
                         
@@ -1610,12 +1621,14 @@
             // Show/hide relevant fields
             const studentField = document.getElementById('studentNameField');
             const dateField = document.getElementById('dateRangeField');
+            const totalDaysField = document.getElementById('totalDaysField');
             const serviceTypeField = document.getElementById('serviceTypeField');
             const noteStyleField = document.getElementById('noteStyleField');
             
             if (type === 'email') {
                 studentField.classList.add('visible');
                 dateField.classList.remove('visible');
+                totalDaysField.classList.remove('visible');
                 serviceTypeField.classList.add('visible');
                 noteStyleField.classList.add('visible');
                 // Auto-map service type for email
@@ -1623,14 +1636,37 @@
             } else {
                 studentField.classList.remove('visible');
                 dateField.classList.add('visible');
+                totalDaysField.classList.add('visible');
                 serviceTypeField.classList.add('visible');
                 noteStyleField.classList.remove('visible');
                 // Default service type for tasks/documents
                 document.getElementById('serviceType').value = 'Project Work';
+                // Update business days when switching to task mode
+                updateBusinessDays();
             }
             
             // Always show detail level
             document.getElementById('detailLevelField').classList.add('visible');
+        }
+        
+        function updateBusinessDays() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const infoSpan = document.getElementById('businessDaysInfo');
+            
+            if (startDate && endDate) {
+                const businessDays = calculateBusinessDays(startDate, endDate);
+                infoSpan.innerHTML = `<strong>${businessDays}</strong> business days in selected range`;
+                
+                // Set a reasonable default for total days worked (about 40% of business days)
+                const totalDaysInput = document.getElementById('totalDaysWorked');
+                if (!totalDaysInput.value) {
+                    const suggestedDays = Math.max(1, Math.floor(businessDays * 0.4));
+                    totalDaysInput.placeholder = `e.g., ${suggestedDays}`;
+                }
+            } else {
+                infoSpan.textContent = 'Select dates to see business days';
+            }
         }
         
         // Display Analysis Results
@@ -1916,6 +1952,7 @@
         function generateTasks() {
             const startDate = document.getElementById('startDate').value || new Date().toISOString().split('T')[0];
             const endDate = document.getElementById('endDate').value || new Date().toISOString().split('T')[0];
+            const totalDaysWorked = parseInt(document.getElementById('totalDaysWorked').value) || 0;
             const serviceType = document.getElementById('serviceType').value;
             const detailLevel = document.getElementById('detailLevel').value;
             const bulletCount = detailLevel === 'basic' ? 3 : 
@@ -1925,18 +1962,50 @@
             const start = new Date(startDate);
             const end = new Date(endDate);
             
+            // Calculate business days in range
+            const businessDays = calculateBusinessDays(startDate, endDate);
+            
+            // If no total days specified, use all business days
+            const daysToGenerate = totalDaysWorked > 0 ? Math.min(totalDaysWorked, businessDays) : businessDays;
+            
+            // Create array of all business days in range
+            const allBusinessDays = [];
             let current = new Date(start);
             while (current <= end) {
                 if (current.getDay() !== 0 && current.getDay() !== 6) {
-                    output += `${formatDate(current)} | 8:00 AM - 1:00 PM | 5 hours | ${serviceType} | Development\n`;
-                    
-                    for (let i = 0; i < bulletCount; i++) {
-                        output += `- ${generateTaskBullet(i)}\n`;
-                    }
-                    
-                    output += '\n';
+                    allBusinessDays.push(new Date(current));
                 }
                 current.setDate(current.getDate() + 1);
+            }
+            
+            // Select days to use (evenly distributed)
+            const selectedDays = [];
+            if (daysToGenerate >= allBusinessDays.length) {
+                // Use all business days
+                selectedDays.push(...allBusinessDays);
+            } else {
+                // Distribute days evenly
+                const interval = allBusinessDays.length / daysToGenerate;
+                for (let i = 0; i < daysToGenerate; i++) {
+                    const index = Math.floor(i * interval);
+                    selectedDays.push(allBusinessDays[index]);
+                }
+            }
+            
+            // Generate tasks for selected days
+            selectedDays.forEach(day => {
+                output += `${formatDate(day)} | 8:00 AM - 1:00 PM | 5 hours | ${serviceType} | Development\n`;
+                
+                for (let i = 0; i < bulletCount; i++) {
+                    output += `- ${generateTaskBullet(i)}\n`;
+                }
+                
+                output += '\n';
+            });
+            
+            // Add summary at the top
+            if (totalDaysWorked > 0) {
+                output = `// Project Summary: ${daysToGenerate} days worked out of ${businessDays} business days\n// Date Range: ${formatDate(start)} to ${formatDate(end)}\n\n` + output;
             }
             
             return output;
@@ -2471,6 +2540,22 @@ pause`;
             
             document.getElementById('startDate').value = start.toISOString().split('T')[0];
             document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        }
+        
+        function calculateBusinessDays(startDate, endDate) {
+            let count = 0;
+            const current = new Date(startDate);
+            const end = new Date(endDate);
+            
+            while (current <= end) {
+                const dayOfWeek = current.getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Not Sunday (0) or Saturday (6)
+                    count++;
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            
+            return count;
         }
         
         function showStatus(message, type = 'info') {
