@@ -1083,6 +1083,7 @@
                     </div>
                     <div style="margin-top: 8px; font-size: 12px; color: #6b7280; text-align: center;">
                         Tip: Screenshot emails or messages and paste (Ctrl+V) - extracts sender, subject, dates & full text
+                        <br><button onclick="testPasteSupport()" style="margin-top: 5px; font-size: 11px; padding: 4px 8px; border: 1px solid #e5e7eb; background: white; border-radius: 4px; cursor: pointer;">Test Paste Support</button>
                     </div>
                     
                     
@@ -1096,6 +1097,9 @@
                         </button>
                         <button class="quick-action-btn" onclick="clearCache()">
                             Clear Cache
+                        </button>
+                        <button class="quick-action-btn" onclick="refreshPage()">
+                            Refresh Page
                         </button>
                     </div>
                     
@@ -1426,13 +1430,22 @@
             
             // Global paste listener for screenshots anywhere on page
             document.addEventListener('paste', function(e) {
-                // Only handle if not already in the input area
-                if (e.target !== universalInput) {
-                    handlePaste(e);
-                    // Focus the input area after paste
-                    universalInput.focus();
+                console.log('Global paste event, target:', e.target);
+                // Handle paste events from anywhere
+                if (e.clipboardData && e.clipboardData.items) {
+                    for (let i = 0; i < e.clipboardData.items.length; i++) {
+                        if (e.clipboardData.items[i].type.indexOf('image') !== -1) {
+                            e.preventDefault();
+                            const blob = e.clipboardData.items[i].getAsFile();
+                            if (blob) {
+                                handleScreenshot(blob);
+                                universalInput.focus();
+                            }
+                            return;
+                        }
+                    }
                 }
-            });
+            }, true);
             
             // Drag and drop support for screenshots
             const inputWrapper = document.getElementById('inputWrapper');
@@ -1464,22 +1477,31 @@
         }
         
         function handlePaste(event) {
+            if (!event.clipboardData) return;
+            
             const items = event.clipboardData.items;
             let hasImage = false;
             
+            // Debug logging
+            console.log('Paste event triggered, items:', items.length);
+            
             // Check for images in clipboard
             for (let i = 0; i < items.length; i++) {
+                console.log('Item', i, 'type:', items[i].type);
                 if (items[i].type.indexOf('image') !== -1) {
                     hasImage = true;
                     event.preventDefault();
                     const blob = items[i].getAsFile();
-                    handleScreenshot(blob);
+                    if (blob) {
+                        console.log('Processing image blob');
+                        handleScreenshot(blob);
+                    }
                     break;
                 }
             }
             
             // If no image, handle as text
-            if (!hasImage) {
+            if (!hasImage && event.target && event.target.tagName === 'TEXTAREA') {
                 const text = event.clipboardData.getData('text');
                 if (text) {
                     event.preventDefault();
@@ -1490,13 +1512,19 @@
         }
         
         async function handleScreenshot(blob) {
+            console.log('handleScreenshot called with blob:', blob);
             showStatus('Processing screenshot...', 'info');
             
             try {
                 const reader = new FileReader();
                 reader.onload = function(e) {
+                    console.log('FileReader loaded, showing modal');
                     // Show extraction modal with screenshot preview
                     showScreenshotExtractionModal(e.target.result);
+                };
+                reader.onerror = function(e) {
+                    console.error('FileReader error:', e);
+                    showStatus('Error reading screenshot', 'error');
                 };
                 reader.readAsDataURL(blob);
                 
@@ -2831,6 +2859,39 @@ Note: For more detailed content analysis, please copy and paste specific text se
             }
         }
         
+        
+        // Refresh Page
+        function refreshPage() {
+            // Hard refresh with cache bypass
+            showStatus('Refreshing page...', 'info');
+            const timestamp = Date.now();
+            window.location.href = window.location.pathname + '?refresh=' + timestamp;
+        }
+        
+        // Test paste support
+        function testPasteSupport() {
+            // Test clipboard API support
+            if (!navigator.clipboard) {
+                alert('Clipboard API not supported in this browser.\n\nTry using HTTPS or a different browser.');
+                return;
+            }
+            
+            // Test paste permissions
+            navigator.permissions.query({name: 'clipboard-read'}).then(result => {
+                let message = 'Paste Support Test:\n\n';
+                message += '1. Clipboard API: ' + (navigator.clipboard ? 'Supported' : 'Not supported') + '\n';
+                message += '2. Clipboard Read Permission: ' + result.state + '\n';
+                message += '3. Browser: ' + navigator.userAgent.substring(0, 50) + '...\n';
+                message += '\nTo test paste:\n';
+                message += '1. Take a screenshot (Windows: Win+Shift+S, Mac: Cmd+Shift+4)\n';
+                message += '2. Press Ctrl+V (or Cmd+V on Mac) anywhere on this page\n';
+                message += '\nNote: Some browsers require HTTPS for clipboard access.';
+                
+                alert(message);
+            }).catch(err => {
+                alert('Paste Support Test:\n\nClipboard permissions cannot be checked.\nTry pasting anyway - it may still work!\n\nError: ' + err.message);
+            });
+        }
         
         // Git Helper Functions removed - Claude handles all git operations
         
