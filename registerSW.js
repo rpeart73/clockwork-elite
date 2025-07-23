@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/clockwork-elite/sw.js', { scope: '/clockwork-elite/' })})}
