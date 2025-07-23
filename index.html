@@ -236,8 +236,15 @@
             background-color: #f3f4f6;
         }
         
-        .input-wrapper.drag-over .input-placeholder {
+        .input-wrapper.drag-over::after {
             content: 'Drop screenshot here...';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            font-weight: 600;
+            color: #10b981;
         }
         
         @keyframes processing-pulse {
@@ -260,20 +267,15 @@
             outline: none;
         }
         
-        .input-placeholder {
-            position: absolute;
-            top: 16px;
-            left: 16px;
+        #universalInput::placeholder {
             color: #374151;
-            pointer-events: none;
-            transition: all 0.3s ease;
             font-weight: 600;
             font-size: 15px;
+            opacity: 1;
         }
         
-        .input-wrapper:focus-within .input-placeholder,
-        .input-wrapper.has-content .input-placeholder {
-            opacity: 0;
+        #universalInput:focus::placeholder {
+            opacity: 0.5;
         }
         
         /* File Upload Area */
@@ -1038,12 +1040,9 @@
                     <!-- Universal Input Area -->
                     <div class="universal-input">
                         <div class="input-wrapper" id="inputWrapper">
-                            <div class="input-placeholder">
-                                <strong>Paste text, emails, or screenshots here (Ctrl+V)</strong>
-                            </div>
                             <textarea 
                                 id="universalInput" 
-                                placeholder="Paste text, emails, or screenshots (Ctrl+V)..."
+                                placeholder="Paste text, emails, or screenshots here (Ctrl+V)..."
                                 spellcheck="true"
                             ></textarea>
                         </div>
