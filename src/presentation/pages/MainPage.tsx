@@ -40,7 +40,8 @@ const MainPage: React.FC = () => {
     saveAsDraft,
     resetAll,
     selectedPOCDates,
-    setSelectedPOCDates
+    setSelectedPOCDates,
+    addManualPOC
   } = useAppStore();
 
   const handleGenerate = () => {
@@ -231,10 +232,11 @@ const MainPage: React.FC = () => {
               emailContent={universalInput}
               studentName={studentName}
               onSave={(poc: ManualPOC) => {
-                // Handle saving the manual POC
-                console.log('Saving manual POC:', poc);
-                // TODO: Add to store and regenerate output
+                // Add manual POC to store
+                addManualPOC(poc);
                 setShowManualEditor(false);
+                // Regenerate output with the new manual POC
+                generateOutput();
               }}
               onCancel={() => setShowManualEditor(false)}
             />

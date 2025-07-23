@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { POC_TEMPLATES } from '@/modules/poc-templates';
 import { ONTARIO_QUICK_FILLS } from '@/modules/ontario-disability-templates';
+import { PrivacyComplianceChecker } from './PrivacyComplianceChecker';
 import './ManualPOCEditor.css';
 
 interface ManualPOCEditorProps {
@@ -14,6 +15,7 @@ interface ManualPOCEditorProps {
 }
 
 export interface ManualPOC {
+  id?: string;
   date: string;
   purposeOfContact: string;
   clientReport: string;
@@ -309,6 +311,13 @@ export const ManualPOCEditor: React.FC<ManualPOCEditorProps> = ({
                   ))}
                 </div>
               )}
+            </div>
+            
+            {/* Privacy Compliance Check */}
+            <div className="form-section">
+              <PrivacyComplianceChecker
+                content={`${formData.purposeOfContact} ${formData.clientReport} ${formData.staffObservations} ${formData.assessment} ${formData.actionsTaken} ${formData.nextSteps}`}
+              />
             </div>
           </div>
 

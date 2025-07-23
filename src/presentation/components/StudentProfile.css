@@ -1,0 +1,356 @@
+/* Student Profile Styles */
+
+.student-profile {
+  background: var(--background-primary);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border-light);
+}
+
+.profile-title h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.75rem;
+  color: var(--text-primary);
+}
+
+.profile-email {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-edit,
+.btn-save,
+.btn-cancel {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-edit {
+  background: var(--accent-color);
+  color: white;
+}
+
+.btn-edit:hover {
+  background: var(--accent-hover);
+}
+
+.btn-save {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-save:hover {
+  background: #229954;
+}
+
+.btn-cancel {
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-cancel:hover {
+  background: var(--background-tertiary);
+}
+
+/* Profile Stats */
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Profile Sections */
+.profile-section {
+  margin-bottom: 2rem;
+}
+
+.profile-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-header h3 {
+  margin: 0;
+}
+
+.btn-toggle {
+  padding: 0.25rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-toggle:hover {
+  background: var(--background-secondary);
+  color: var(--text-primary);
+}
+
+/* Edit Form */
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.edit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.edit-form input,
+.edit-form select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.edit-form input:focus,
+.edit-form select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+/* Info Display */
+.info-display p {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-secondary);
+}
+
+.info-display p strong {
+  color: var(--text-primary);
+  margin-right: 0.5rem;
+}
+
+/* Accommodations List */
+.accommodations-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.accommodations-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-secondary);
+}
+
+.accommodations-list li:last-child {
+  border-bottom: none;
+}
+
+/* Tags */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  background: var(--accent-light);
+  color: var(--accent-color);
+  border-radius: 16px;
+  font-size: 0.875rem;
+}
+
+.tag-remove {
+  margin-left: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.tag-remove:hover {
+  color: var(--accent-hover);
+}
+
+.tag-input {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.tag-input input {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  width: 120px;
+}
+
+.tag-input button {
+  padding: 0.25rem 0.5rem;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* Running Notes */
+.notes-display {
+  background: var(--background-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.notes-display pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.add-note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.add-note textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  resize: vertical;
+}
+
+.add-note textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.btn-add-note {
+  align-self: flex-end;
+  padding: 0.5rem 1.5rem;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add-note:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn-add-note:disabled {
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.no-data {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .profile-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .tag-input input {
+    width: 100px;
+  }
+  
+  .notes-display {
+    max-height: 200px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .notes-display {
+    background: rgba(255, 255, 255, 0.02);
+  }
+}

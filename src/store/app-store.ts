@@ -5,6 +5,7 @@ import { DateExtractor } from '@/modules/date-extraction';
 import { POCConsolidator, PointOfContact } from '@/modules/poc-consolidation';
 import { InputSanitizer } from '@/modules/input-sanitization';
 import { generateUniqueNotes } from '@/modules/simple-poc-fix';
+import { ManualPOC } from '@/presentation/components/ManualPOCEditor';
 
 /**
  * Application state management - Single source of truth
@@ -61,6 +62,9 @@ type AppStateData = {
   // Draft
   lastSavedDraft: string;
   draftTimestamp: string | null;
+  
+  // Manual POCs
+  manualPOCs: ManualPOC[];
 };
 
 type AppStateActions = {
@@ -86,6 +90,9 @@ type AppStateActions = {
   clearAll: () => void;
   restoreDraft: (draft: Partial<AppState>) => void;
   updateWorkflow: (update: Partial<WorkflowState>) => void;
+  addManualPOC: (poc: ManualPOC) => void;
+  updateManualPOC: (pocId: string, poc: ManualPOC) => void;
+  deleteManualPOC: (pocId: string) => void;
 };
 
 type AppState = AppStateData & AppStateActions;
@@ -116,7 +123,8 @@ const initialState: AppStateData = {
   noteContext: null,
   generatedOutput: '',
   lastSavedDraft: '',
-  draftTimestamp: null
+  draftTimestamp: null,
+  manualPOCs: []
 };
 
 
@@ -284,6 +292,18 @@ export const useAppStore = create<AppState>()(
 
       updateWorkflow: (update) => set(state => ({
         workflow: { ...state.workflow, ...update }
+      })),
+      
+      addManualPOC: (poc) => set(state => ({
+        manualPOCs: [...state.manualPOCs, { ...poc, id: Date.now().toString() }]
+      })),
+      
+      updateManualPOC: (pocId, poc) => set(state => ({
+        manualPOCs: state.manualPOCs.map(p => p.id === pocId ? poc : p)
+      })),
+      
+      deleteManualPOC: (pocId) => set(state => ({
+        manualPOCs: state.manualPOCs.filter(p => p.id !== pocId)
       }))
     }),
     {
@@ -302,27 +322,57 @@ function generateCaseNotes(state: AppState): string {
     // noteStyle, 
     // detailLevel,
     // noteContext,
-    universalInput
+    universalInput,
+    manualPOCs
   } = state;
 
   let output = '';
 
+  // Calculate total POCs including manual ones
+  const totalPOCs = detectedPOCs.length + manualPOCs.length;
+
   // Summary header if multiple POCs
-  if (detectedPOCs.length > 1) {
-    output += `// ${detectedPOCs.length} Points of Contact Detected\n`;
+  if (totalPOCs > 1) {
+    output += `// ${totalPOCs} Points of Contact Detected\n`;
     output += `// Student: ${studentName}\n`;
     output += `// Service: ${serviceType}\n`;
     output += '='.repeat(80) + '\n\n';
   }
 
-  // Use the new unique note generation to prevent duplicates
-  return generateUniqueNotes(
+  // First, generate notes for detected POCs
+  const detectedNotes = generateUniqueNotes(
     universalInput,
     detectedPOCs,
     studentName,
     serviceType,
     state.selectedPOCDates.length > 0 ? state.selectedPOCDates : undefined
   );
+
+  output += detectedNotes;
+
+  // Then add manual POCs
+  if (manualPOCs.length > 0) {
+    if (detectedPOCs.length > 0) {
+      output += '\n\n' + '='.repeat(80) + '\n\n';
+    }
+    
+    manualPOCs.forEach((poc, index) => {
+      if (index > 0) {
+        output += '\n\n' + '='.repeat(80) + '\n\n';
+      }
+      
+      output += `${poc.date} | ${poc.serviceType} | ${poc.duration} minutes | ${poc.category} | ${studentName}\n\n`;
+      
+      output += `**1. Purpose of Contact**\n${poc.purposeOfContact}\n\n`;
+      output += `**2. Client Report (Subjective)**\n${poc.clientReport}\n\n`;
+      output += `**3. Staff Observations (Objective)**\n${poc.staffObservations}\n\n`;
+      output += `**4. Assessment / Analysis**\n${poc.assessment}\n\n`;
+      output += `**5. Actions Taken / Intervention**\n${poc.actionsTaken}\n\n`;
+      output += `**6. Plan / Next Steps**\n${poc.nextSteps}`;
+    });
+  }
+
+  return output;
 }
 
 function generateTasks(state: AppState): string {
