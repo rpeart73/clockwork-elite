@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { DateExtractor } from '@/modules/date-extraction';
 import { POCConsolidator, PointOfContact } from '@/modules/poc-consolidation';
 import { InputSanitizer } from '@/modules/input-sanitization';
+import { generateUniqueNotes } from '@/modules/simple-poc-fix';
 
 /**
  * Application state management - Single source of truth
@@ -24,6 +25,7 @@ type AppStateData = {
   
   // Email specific
   detectedPOCs: PointOfContact[];
+  selectedPOCDates: string[];
   hasLastDate: boolean;
   
   // Form data
@@ -77,6 +79,7 @@ type AppStateActions = {
   setEndDate: (endDate: string) => void;
   setTotalDaysWorked: (totalDaysWorked: number) => void;
   setDistributionPattern: (distributionPattern: 'equal' | 'frontLoaded' | 'backLoaded' | 'ascending' | 'descending') => void;
+  setSelectedPOCDates: (dates: string[]) => void;
   copyToClipboard: () => Promise<void>;
   saveAsDraft: () => void;
   resetAll: () => void;
@@ -92,6 +95,7 @@ const initialState: AppStateData = {
   contentType: 'auto-detect',
   currentMode: 'auto-detect',
   detectedPOCs: [],
+  selectedPOCDates: [],
   hasLastDate: false,
   studentName: '',
   serviceType: 'Email Support',
@@ -249,6 +253,7 @@ export const useAppStore = create<AppState>()(
       setEndDate: (endDate: string) => set({ endDate }),
       setTotalDaysWorked: (totalDaysWorked: number) => set({ totalDaysWorked }),
       setDistributionPattern: (distributionPattern: 'equal' | 'frontLoaded' | 'backLoaded' | 'ascending' | 'descending') => set({ distributionPattern }),
+      setSelectedPOCDates: (selectedPOCDates: string[]) => set({ selectedPOCDates }),
       
       copyToClipboard: async () => {
         const state = get();
@@ -294,9 +299,9 @@ function generateCaseNotes(state: AppState): string {
     detectedPOCs, 
     studentName, 
     serviceType, 
-    noteStyle, 
+    // noteStyle, 
     // detailLevel,
-    noteContext,
+    // noteContext,
     universalInput
   } = state;
 
@@ -310,59 +315,14 @@ function generateCaseNotes(state: AppState): string {
     output += '='.repeat(80) + '\n\n';
   }
 
-  detectedPOCs.forEach((poc, index) => {
-    // Skip pending POCs
-    if (poc.type === 'pending') return;
-
-    const hours = '1 hour';
-    output += `${poc.dateStr} | ${serviceType} | ${hours} | Academic Support | ${studentName}\n\n`;
-
-    if (noteStyle === 'natural') {
-      output += 'OBJECTIVE:\n';
-      if (noteContext?.topics) {
-        output += `${studentName} contacted regarding ${noteContext.topics}.`;
-      } else {
-        output += `${studentName} reached out for assistance.`;
-      }
-      if (noteContext?.questions) {
-        output += ` Student inquired about ${noteContext.questions}.`;
-      }
-      output += '\n\n';
-
-      output += 'WHAT TRANSPIRED:\n';
-      if (noteContext?.actions) {
-        output += noteContext.actions;
-      } else {
-        output += `Reviewed the ${poc.type} and provided appropriate response.`;
-      }
-      if (noteContext?.additional) {
-        output += ` ${noteContext.additional}`;
-      }
-      output += '\n\n';
-
-      output += 'OUTCOME/PLAN:\n';
-      if (noteContext?.followUp) {
-        output += noteContext.followUp;
-      } else {
-        output += 'Response provided. Will monitor for any follow-up questions.';
-      }
-      output += '\n';
-    }
-
-    if (index < detectedPOCs.length - 1) {
-      output += '\n' + '='.repeat(80) + '\n\n';
-    }
-  });
-
-  // Add email verbatim once at the end
-  if (universalInput && detectedPOCs.length > 0) {
-    output += '\n\n' + '-'.repeat(80) + '\n';
-    output += 'ORIGINAL EMAIL:\n\n';
-    output += universalInput.trim();
-    output += '\n' + '-'.repeat(80);
-  }
-
-  return output;
+  // Use the new unique note generation to prevent duplicates
+  return generateUniqueNotes(
+    universalInput,
+    detectedPOCs,
+    studentName,
+    serviceType,
+    state.selectedPOCDates.length > 0 ? state.selectedPOCDates : undefined
+  );
 }
 
 function generateTasks(state: AppState): string {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAppStore } from '@/store/app-store';
+// import { POCSelector } from '@/presentation/components/POCSelector';
 import './MainPage.css';
 
 const MainPage: React.FC = () => {
