@@ -1617,7 +1617,7 @@
                         </div>
                         
                         <div class="form-field">
-                            <label class="form-label">Dates Mentioned <span style="color: #ef4444;">*</span></label>
+                            <label class="form-label">Dates Mentioned</label>
                             <input type="text" id="screenshotDates" class="form-input" 
                                 placeholder="e.g., Meeting on 1/15, deadline 1/22, follow-up 1/29">
                             <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
@@ -1626,7 +1626,7 @@
                         </div>
                         
                         <div class="form-field">
-                            <label class="form-label">Full Message Content <span style="color: #ef4444;">*</span></label>
+                            <label class="form-label">Full Message Content</label>
                             <textarea id="screenshotContent" class="form-input" rows="8" 
                                 placeholder="Type or paste the complete email message here..."></textarea>
                         </div>
@@ -1669,14 +1669,32 @@
         }
         
         function processScreenshotData() {
-            const from = document.getElementById('screenshotFrom').value.trim();
-            const subject = document.getElementById('screenshotSubject').value.trim();
-            const dates = document.getElementById('screenshotDates').value.trim();
-            const content = document.getElementById('screenshotContent').value.trim();
+            console.log('processScreenshotData called');
             
-            // Validate required fields
-            if (!content) {
-                showStatus('Please enter the message content', 'error');
+            const fromElement = document.getElementById('screenshotFrom');
+            const subjectElement = document.getElementById('screenshotSubject');
+            const datesElement = document.getElementById('screenshotDates');
+            const contentElement = document.getElementById('screenshotContent');
+            
+            console.log('Elements found:', {
+                from: !!fromElement,
+                subject: !!subjectElement,
+                dates: !!datesElement,
+                content: !!contentElement
+            });
+            
+            const from = fromElement ? fromElement.value.trim() : '';
+            const subject = subjectElement ? subjectElement.value.trim() : '';
+            const dates = datesElement ? datesElement.value.trim() : '';
+            const content = contentElement ? contentElement.value.trim() : '';
+            
+            console.log('Values:', { from, subject, dates, contentLength: content.length });
+            
+            // Validate - at least one field should have content
+            if (!from && !subject && !dates && !content) {
+                showStatus('Please enter at least some information from the screenshot', 'error');
+                const firstField = document.getElementById('screenshotFrom');
+                if (firstField) firstField.focus();
                 return;
             }
             
@@ -1685,7 +1703,12 @@
             if (from) extractedText += `From: ${from}\n`;
             if (subject) extractedText += `Subject: ${subject}\n`;
             if (dates) extractedText += `Date(s): ${dates}\n`;
-            extractedText += `\n${content}`;
+            if (content) extractedText += `\n${content}`;
+            
+            // If only metadata without content, that's okay
+            if (!extractedText.trim()) {
+                extractedText = 'Screenshot data (no text extracted)';
+            }
             
             // Add to input
             const universalInput = document.getElementById('universalInput');
@@ -1703,7 +1726,7 @@
             // Trigger content analysis
             handleInputChange({ target: universalInput });
             
-            showStatus('Screenshot data extracted successfully', 'success');
+            showStatus('Screenshot data added', 'success');
         }
         
         function handleDragOver(event) {
