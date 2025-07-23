@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/app-store';
 import { POCSelector } from '@/presentation/components/POCSelector';
 import { ManualPOCEditor, ManualPOC } from '@/presentation/components/ManualPOCEditor';
@@ -49,6 +49,14 @@ const MainPage: React.FC = () => {
     generateOutput();
   };
 
+  // Trigger POC detection when input changes in email mode
+  useEffect(() => {
+    if (currentMode === 'email' && universalInput.trim()) {
+      // Trigger the analysis
+      analyzeContent();
+    }
+  }, [universalInput, currentMode, analyzeContent]);
+
   return (
     <div className="main-container">
       <header className="app-header">
@@ -57,24 +65,56 @@ const MainPage: React.FC = () => {
       </header>
 
       <main className="app-main">
+        {/* Mode Switcher */}
+        <section className="mode-switcher">
+          <button 
+            className={`mode-btn ${currentMode === 'email' ? 'active' : ''}`}
+            onClick={() => useAppStore.getState().setCurrentMode('email')}
+          >
+            Case Notes
+          </button>
+          <button 
+            className={`mode-btn ${currentMode === 'task' ? 'active' : ''}`}
+            onClick={() => useAppStore.getState().setCurrentMode('task')}
+          >
+            Tasks
+          </button>
+        </section>
+
         {/* Input Section */}
         <section className="input-section">
           <h2>Universal Input</h2>
           <textarea
             value={universalInput}
             onChange={(e) => setUniversalInput(e.target.value)}
-            placeholder="Paste your email content here..."
+            placeholder={currentMode === 'email' ? "Paste your email content here..." : "Enter task description..."}
             className="universal-input"
             rows={10}
           />
           
-          {/* POC Detection and Selection */}
-          {detectedPOCs.length > 0 && (
+          {/* POC Detection and Selection - Only for Case Notes mode */}
+          {currentMode === 'email' && detectedPOCs.length > 0 && (
             <>
               <POCSelector 
                 detectedPOCs={detectedPOCs}
                 selectedDates={selectedPOCDates}
                 onSelectionChange={setSelectedPOCDates}
+                onAddPOC={() => {
+                  setSelectedDateForManual(new Date());
+                  setShowManualEditor(true);
+                  setManualEditMode('create');
+                }}
+                onRemovePOC={() => {
+                  if (selectedPOCDates.length > 0) {
+                    // Remove the last selected POC
+                    const lastSelectedDate = selectedPOCDates[selectedPOCDates.length - 1];
+                    setSelectedPOCDates(selectedPOCDates.filter(d => d !== lastSelectedDate));
+                    // Also remove from detected POCs
+                    useAppStore.getState().setDetectedPOCs(
+                      detectedPOCs.filter(poc => poc.dateStr !== lastSelectedDate)
+                    );
+                  }
+                }}
               />
               <div className="manual-poc-actions">
                 <button 
@@ -110,7 +150,7 @@ const MainPage: React.FC = () => {
 
         {/* Smart Form */}
         <section className="smart-form">
-          <h2>Smart Form</h2>
+          <h2>{currentMode === 'email' ? 'Case Note Settings' : 'Task Distribution Settings'}</h2>
           
           {currentMode === 'email' && (
             <div className="form-group">

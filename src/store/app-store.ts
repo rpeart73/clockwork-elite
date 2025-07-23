@@ -279,10 +279,45 @@ export const useAppStore = create<AppState>()(
       
       saveAsDraft: () => {
         const state = get();
+        const draft = {
+          universalInput: state.universalInput,
+          currentMode: state.currentMode,
+          studentName: state.studentName,
+          serviceType: state.serviceType,
+          noteStyle: state.noteStyle,
+          detailLevel: state.detailLevel,
+          language: state.language,
+          startDate: state.startDate,
+          endDate: state.endDate,
+          totalDaysWorked: state.totalDaysWorked,
+          distributionPattern: state.distributionPattern,
+          generatedOutput: state.generatedOutput,
+          timestamp: new Date().toISOString()
+        };
+        
+        // Save to localStorage
+        localStorage.setItem('clockwork-elite-draft', JSON.stringify(draft));
+        
         set({
           lastSavedDraft: state.generatedOutput || '',
-          draftTimestamp: new Date().toISOString()
+          draftTimestamp: draft.timestamp,
+          workflow: {
+            ...state.workflow,
+            message: 'Draft saved successfully',
+            state: 'success'
+          }
         });
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          set(state => ({
+            workflow: {
+              ...state.workflow,
+              message: 'Ready',
+              state: 'idle'
+            }
+          }));
+        }, 3000);
       },
       
       resetAll: () => set(() => initialState),

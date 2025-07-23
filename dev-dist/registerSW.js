@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/clockwork-elite/dev-sw.js?dev-sw', { scope: '/clockwork-elite/', type: 'classic' })

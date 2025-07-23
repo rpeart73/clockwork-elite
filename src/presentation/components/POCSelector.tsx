@@ -6,12 +6,16 @@ interface POCSelectorProps {
   detectedPOCs: PointOfContact[];
   selectedDates: string[];
   onSelectionChange: (dates: string[]) => void;
+  onAddPOC?: () => void;
+  onRemovePOC?: () => void;
 }
 
 export const POCSelector: React.FC<POCSelectorProps> = ({
   detectedPOCs,
   selectedDates,
-  onSelectionChange
+  onSelectionChange,
+  onAddPOC,
+  onRemovePOC
 }) => {
   const handleCheckboxChange = (dateStr: string) => {
     if (selectedDates.includes(dateStr)) {
@@ -33,12 +37,33 @@ export const POCSelector: React.FC<POCSelectorProps> = ({
     <div className="poc-selector">
       <div className="poc-selector-header">
         <h3>Detected Points of Contact</h3>
-        <button 
-          className="select-all-btn"
-          onClick={handleSelectAll}
-        >
-          {selectedDates.length === detectedPOCs.length ? 'Deselect All' : 'Select All'}
-        </button>
+        <div className="poc-controls">
+          <div className="poc-count-adjuster">
+            <button 
+              className="poc-adjust-btn"
+              onClick={onRemovePOC}
+              disabled={!onRemovePOC || detectedPOCs.length === 0}
+              title="Remove POC"
+            >
+              -
+            </button>
+            <span className="poc-count">{detectedPOCs.length} POCs</span>
+            <button 
+              className="poc-adjust-btn"
+              onClick={onAddPOC}
+              disabled={!onAddPOC}
+              title="Add POC"
+            >
+              +
+            </button>
+          </div>
+          <button 
+            className="select-all-btn"
+            onClick={handleSelectAll}
+          >
+            {selectedDates.length === detectedPOCs.length ? 'Deselect All' : 'Select All'}
+          </button>
+        </div>
       </div>
       
       <div className="poc-list">
