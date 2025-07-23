@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/app-store';
 import { POCSelector } from '@/presentation/components/POCSelector';
 import { ManualPOCEditor, ManualPOC } from '@/presentation/components/ManualPOCEditor';
+import { POC_CATEGORIES } from '@/modules/poc-documentation-guide';
 import './MainPage.css';
 
 const MainPage: React.FC = () => {
@@ -109,10 +110,6 @@ const MainPage: React.FC = () => {
                     // Remove the last selected POC
                     const lastSelectedDate = selectedPOCDates[selectedPOCDates.length - 1];
                     setSelectedPOCDates(selectedPOCDates.filter(d => d !== lastSelectedDate));
-                    // Also remove from detected POCs
-                    useAppStore.getState().setDetectedPOCs(
-                      detectedPOCs.filter(poc => poc.dateStr !== lastSelectedDate)
-                    );
                   }
                 }}
               />
@@ -169,6 +166,18 @@ const MainPage: React.FC = () => {
                 <option value="Phone Call">Phone Call</option>
                 <option value="Chat Support">Chat Support</option>
               </select>
+              
+              <label>POC Category</label>
+              <select className="poc-category-select">
+                {POC_CATEGORIES.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <div className="poc-category-info">
+                <small>This determines how the case note will be categorized in Clockwork</small>
+              </div>
               
               <label>Note Style</label>
               <select value={noteStyle} onChange={(e) => setNoteStyle(e.target.value as any)}>

@@ -3,8 +3,9 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { format } from 'date-fns';
 import { DateExtractor } from '@/modules/date-extraction';
 import { POCConsolidator, PointOfContact } from '@/modules/poc-consolidation';
+import { generatePOCTemplate, formatPOCNote, applyProfessionalTone } from '@/modules/poc-documentation-guide';
 import { InputSanitizer } from '@/modules/input-sanitization';
-import { generateUniqueNotes } from '@/modules/simple-poc-fix';
+// import { generateUniqueNotes } from '@/modules/simple-poc-fix'; // Replaced with POC Documentation Guide
 import { ManualPOC } from '@/presentation/components/ManualPOCEditor';
 
 /**
@@ -304,7 +305,7 @@ export const useAppStore = create<AppState>()(
           workflow: {
             ...state.workflow,
             message: 'Draft saved successfully',
-            state: 'success'
+            state: 'complete'
           }
         });
         
@@ -348,7 +349,7 @@ export const useAppStore = create<AppState>()(
   )
 );
 
-// Note generation functions (extracted from original)
+// Note generation functions using POC Documentation Guide
 function generateCaseNotes(state: AppState): string {
   const { 
     detectedPOCs, 
@@ -374,16 +375,34 @@ function generateCaseNotes(state: AppState): string {
     output += '='.repeat(80) + '\n\n';
   }
 
-  // First, generate notes for detected POCs
-  const detectedNotes = generateUniqueNotes(
-    universalInput,
-    detectedPOCs,
-    studentName,
-    serviceType,
-    state.selectedPOCDates.length > 0 ? state.selectedPOCDates : undefined
-  );
-
-  output += detectedNotes;
+  // First, generate notes for detected POCs using POC Documentation Guide
+  const selectedPOCs = state.selectedPOCDates.length > 0 
+    ? detectedPOCs.filter(poc => state.selectedPOCDates.includes(poc.dateStr))
+    : detectedPOCs;
+    
+  selectedPOCs.forEach((poc, index) => {
+    if (index > 0) {
+      output += '\n\n' + '='.repeat(80) + '\n\n';
+    }
+    
+    // Generate POC template based on email content
+    const template = generatePOCTemplate('direct-student-contact', universalInput, studentName);
+    
+    // Format header
+    output += `${poc.dateStr} | ${serviceType} | Email Support | Direct Student Contact | ${studentName}\n\n`;
+    
+    // Format using professional template
+    const formattedNote = formatPOCNote(template);
+    const professionalNote = applyProfessionalTone(formattedNote);
+    
+    output += professionalNote;
+    
+    // Add email verbatim if exists
+    if (poc.context) {
+      output += '\n\n**Email Verbatim:**\n';
+      output += '```\n' + poc.context + '\n```';
+    }
+  });
 
   // Then add manual POCs
   if (manualPOCs.length > 0) {
