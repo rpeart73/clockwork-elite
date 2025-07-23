@@ -1082,8 +1082,18 @@
                         </div>
                     </div>
                     <div style="margin-top: 8px; font-size: 12px; color: #6b7280; text-align: center;">
-                        Tip: Screenshot emails or messages and paste (Ctrl+V) - extracts sender, subject, dates & full text
-                        <br><button onclick="testPasteSupport()" style="margin-top: 5px; font-size: 11px; padding: 4px 8px; border: 1px solid #e5e7eb; background: white; border-radius: 4px; cursor: pointer;">Test Paste Support</button>
+                        <strong>Screenshot Instructions:</strong><br>
+                        1. Take screenshot (Win+Shift+S or Mac: Cmd+Shift+4)<br>
+                        2. Click this box and press Ctrl+V (Cmd+V on Mac)<br>
+                        <button onclick="testPasteSupport()" style="margin-top: 5px; font-size: 11px; padding: 4px 8px; border: 1px solid #e5e7eb; background: white; border-radius: 4px; cursor: pointer;">Test Paste</button>
+                        <button onclick="document.getElementById('universalInput').focus()" style="margin-top: 5px; font-size: 11px; padding: 4px 8px; border: 1px solid #e5e7eb; background: white; border-radius: 4px; cursor: pointer;">Click to Focus</button>
+                        <br>
+                        <label style="margin-top: 5px; display: inline-block;">
+                            <input type="file" accept="image/*" onchange="handleFileSelect(event)" style="display: none;" id="screenshotFile">
+                            <button onclick="document.getElementById('screenshotFile').click()" style="margin-top: 5px; font-size: 11px; padding: 4px 8px; border: 1px solid #e5e7eb; background: white; border-radius: 4px; cursor: pointer;">
+                                Upload Screenshot
+                            </button>
+                        </label>
                     </div>
                     
                     
@@ -1426,26 +1436,47 @@
             
             // Universal input handling
             universalInput.addEventListener('input', debounce(handleInputChange, 300));
-            universalInput.addEventListener('paste', handlePaste);
             
-            // Global paste listener for screenshots anywhere on page
+            // Single paste handler for the entire document
             document.addEventListener('paste', function(e) {
-                console.log('Global paste event, target:', e.target);
-                // Handle paste events from anywhere
-                if (e.clipboardData && e.clipboardData.items) {
-                    for (let i = 0; i < e.clipboardData.items.length; i++) {
-                        if (e.clipboardData.items[i].type.indexOf('image') !== -1) {
-                            e.preventDefault();
-                            const blob = e.clipboardData.items[i].getAsFile();
-                            if (blob) {
-                                handleScreenshot(blob);
-                                universalInput.focus();
-                            }
+                console.log('Paste event detected');
+                
+                if (!e.clipboardData || !e.clipboardData.items) {
+                    console.log('No clipboard data available');
+                    return;
+                }
+                
+                const items = Array.from(e.clipboardData.items);
+                console.log('Clipboard items:', items.length);
+                
+                // Look for images first
+                for (let item of items) {
+                    console.log('Item type:', item.type);
+                    if (item.type.startsWith('image/')) {
+                        e.preventDefault();
+                        const blob = item.getAsFile();
+                        if (blob) {
+                            console.log('Image found, processing...');
+                            handleScreenshot(blob);
                             return;
                         }
                     }
                 }
-            }, true);
+                
+                // If no image and we're in the textarea, handle text
+                if (e.target === universalInput) {
+                    const text = e.clipboardData.getData('text/plain');
+                    if (text) {
+                        e.preventDefault();
+                        const start = universalInput.selectionStart;
+                        const end = universalInput.selectionEnd;
+                        const currentValue = universalInput.value;
+                        universalInput.value = currentValue.substring(0, start) + text + currentValue.substring(end);
+                        universalInput.selectionStart = universalInput.selectionEnd = start + text.length;
+                        handleInputChange({ target: universalInput });
+                    }
+                }
+            });
             
             // Drag and drop support for screenshots
             const inputWrapper = document.getElementById('inputWrapper');
@@ -1476,40 +1507,7 @@
             }
         }
         
-        function handlePaste(event) {
-            if (!event.clipboardData) return;
-            
-            const items = event.clipboardData.items;
-            let hasImage = false;
-            
-            // Debug logging
-            console.log('Paste event triggered, items:', items.length);
-            
-            // Check for images in clipboard
-            for (let i = 0; i < items.length; i++) {
-                console.log('Item', i, 'type:', items[i].type);
-                if (items[i].type.indexOf('image') !== -1) {
-                    hasImage = true;
-                    event.preventDefault();
-                    const blob = items[i].getAsFile();
-                    if (blob) {
-                        console.log('Processing image blob');
-                        handleScreenshot(blob);
-                    }
-                    break;
-                }
-            }
-            
-            // If no image, handle as text
-            if (!hasImage && event.target && event.target.tagName === 'TEXTAREA') {
-                const text = event.clipboardData.getData('text');
-                if (text) {
-                    event.preventDefault();
-                    event.target.value = text;
-                    handleInputChange({ target: event.target });
-                }
-            }
-        }
+        // Removed handlePaste function - now handled in the single document paste listener
         
         async function handleScreenshot(blob) {
             console.log('handleScreenshot called with blob:', blob);
@@ -2891,6 +2889,17 @@ Note: For more detailed content analysis, please copy and paste specific text se
             }).catch(err => {
                 alert('Paste Support Test:\n\nClipboard permissions cannot be checked.\nTry pasting anyway - it may still work!\n\nError: ' + err.message);
             });
+        }
+        
+        // Handle file selection for screenshots
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                console.log('File selected:', file.name);
+                handleScreenshot(file);
+            }
+            // Reset the input so the same file can be selected again
+            event.target.value = '';
         }
         
         // Git Helper Functions removed - Claude handles all git operations
