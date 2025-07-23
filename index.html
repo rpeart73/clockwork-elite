@@ -2172,30 +2172,229 @@
         function generateEntries() {
             updateWorkflowState(WorkflowState.GENERATING);
             
-            setTimeout(() => {
-                let output = '';
-                
-                if (contentType === 'email') {
-                    output = generateCaseNotes();
-                } else {
-                    output = generateTasks();
-                }
-                
-                // Show output
-                document.getElementById('outputText').value = output;
-                document.getElementById('outputModal').classList.add('active');
-                
-                updateWorkflowState(WorkflowState.COMPLETE);
-                
-                // Auto-save
-                autoSaveOutput(output);
-                
-                // Clear draft since work is complete
-                clearDraft();
-            }, 1000);
+            // For email mode, gather context before generating
+            if (contentType === 'email') {
+                gatherEmailContext().then(context => {
+                    let output = generateCaseNotes(context);
+                    
+                    // Show output
+                    document.getElementById('outputText').value = output;
+                    document.getElementById('outputModal').classList.add('active');
+                    
+                    updateWorkflowState(WorkflowState.COMPLETE);
+                    
+                    // Auto-save
+                    autoSaveOutput(output);
+                    
+                    // Clear draft since work is complete
+                    clearDraft();
+                });
+            } else {
+                setTimeout(() => {
+                    let output = generateTasks();
+                    
+                    // Show output
+                    document.getElementById('outputText').value = output;
+                    document.getElementById('outputModal').classList.add('active');
+                    
+                    updateWorkflowState(WorkflowState.COMPLETE);
+                    
+                    // Auto-save
+                    autoSaveOutput(output);
+                    
+                    // Clear draft since work is complete
+                    clearDraft();
+                }, 1000);
+            }
         }
         
-        function generateCaseNotes() {
+        // Gather specific context for email notes
+        function gatherEmailContext() {
+            return new Promise((resolve) => {
+                const content = document.getElementById('universalInput').value;
+                const studentName = document.getElementById('studentName').value || 'the student';
+                
+                // Create a context gathering modal
+                const modal = document.createElement('div');
+                modal.className = 'context-modal active';
+                modal.innerHTML = `
+                    <div class="context-modal-content">
+                        <h3>Let's make these notes specific!</h3>
+                        <p>Answer these questions to create detailed, accurate case notes:</p>
+                        
+                        <div class="context-form">
+                            <div class="context-question">
+                                <label>What specific topics/issues were discussed?</label>
+                                <textarea id="contextTopics" placeholder="e.g., SAS registration issues, degree requirement progress report access, scheduling conflicts"></textarea>
+                            </div>
+                            
+                            <div class="context-question">
+                                <label>What questions did ${studentName} ask?</label>
+                                <textarea id="contextQuestions" placeholder="e.g., How to access SAS portal, When can they meet, What documents are needed"></textarea>
+                            </div>
+                            
+                            <div class="context-question">
+                                <label>What actions did you take or responses did you provide?</label>
+                                <textarea id="contextActions" placeholder="e.g., Explained registration process, Scheduled meeting for Thursday 10am, Sent portal access instructions"></textarea>
+                            </div>
+                            
+                            <div class="context-question">
+                                <label>What is the follow-up plan or next steps?</label>
+                                <textarea id="contextFollowUp" placeholder="e.g., Meeting scheduled for Thursday, Will send additional resources, Student to complete registration by Friday"></textarea>
+                            </div>
+                            
+                            <div class="context-question">
+                                <label>Any additional important details?</label>
+                                <textarea id="contextAdditional" placeholder="e.g., Urgent deadline approaching, First-time user needs extra support, Related to previous issue from last week"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="context-actions">
+                            <button onclick="submitContext()" class="btn-primary">Generate Specific Notes</button>
+                            <button onclick="skipContext()" class="btn-secondary">Skip (Use Generic)</button>
+                        </div>
+                    </div>
+                `;
+                
+                // Add modal styles
+                const style = document.createElement('style');
+                style.textContent = `
+                    .context-modal {
+                        display: none;
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0, 0, 0, 0.8);
+                        z-index: 1000;
+                        padding: 20px;
+                        overflow-y: auto;
+                    }
+                    
+                    .context-modal.active {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    
+                    .context-modal-content {
+                        background: white;
+                        border-radius: 12px;
+                        padding: 30px;
+                        max-width: 600px;
+                        width: 100%;
+                        max-height: 90vh;
+                        overflow-y: auto;
+                    }
+                    
+                    .context-modal-content h3 {
+                        margin: 0 0 10px 0;
+                        color: #000;
+                    }
+                    
+                    .context-form {
+                        margin: 20px 0;
+                    }
+                    
+                    .context-question {
+                        margin-bottom: 20px;
+                    }
+                    
+                    .context-question label {
+                        display: block;
+                        font-weight: 600;
+                        margin-bottom: 8px;
+                        color: #333;
+                    }
+                    
+                    .context-question textarea {
+                        width: 100%;
+                        min-height: 80px;
+                        padding: 10px;
+                        border: 2px solid #e0e0e0;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        resize: vertical;
+                    }
+                    
+                    .context-question textarea:focus {
+                        outline: none;
+                        border-color: #000;
+                    }
+                    
+                    .context-actions {
+                        display: flex;
+                        gap: 10px;
+                        justify-content: flex-end;
+                        margin-top: 20px;
+                    }
+                    
+                    .context-actions button {
+                        padding: 10px 20px;
+                        border: none;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    }
+                    
+                    .btn-primary {
+                        background: #000;
+                        color: white;
+                    }
+                    
+                    .btn-primary:hover {
+                        background: #333;
+                    }
+                    
+                    .btn-secondary {
+                        background: #e0e0e0;
+                        color: #333;
+                    }
+                    
+                    .btn-secondary:hover {
+                        background: #d0d0d0;
+                    }
+                `;
+                
+                document.head.appendChild(style);
+                document.body.appendChild(modal);
+                
+                // Focus first textarea
+                setTimeout(() => {
+                    document.getElementById('contextTopics').focus();
+                }, 100);
+                
+                // Handle submit
+                window.submitContext = function() {
+                    const context = {
+                        topics: document.getElementById('contextTopics').value.trim(),
+                        questions: document.getElementById('contextQuestions').value.trim(),
+                        actions: document.getElementById('contextActions').value.trim(),
+                        followUp: document.getElementById('contextFollowUp').value.trim(),
+                        additional: document.getElementById('contextAdditional').value.trim()
+                    };
+                    
+                    // Clean up
+                    modal.remove();
+                    style.remove();
+                    
+                    resolve(context);
+                };
+                
+                // Handle skip
+                window.skipContext = function() {
+                    // Clean up
+                    modal.remove();
+                    style.remove();
+                    
+                    resolve(null);
+                };
+            });
+        }
+        
+        function generateCaseNotes(context) {
             const studentName = document.getElementById('studentName').value || 'the student';
             const serviceType = 'Email Support'; // Hardcoded for email case notes
             const noteStyle = document.getElementById('noteStyle').value;
@@ -2221,50 +2420,117 @@
                 output += `${poc.dateStr} | ${serviceType} | ${hours} | Academic Support | ${studentName}\n\n`;
                 
                 if (noteStyle === 'natural') {
-                    // Natural Narrative Style - Use ONLY actual content, no assumptions
-                    const content = document.getElementById('universalInput').value;
-                    const sentences = extractFactualSentences(content);
-                    
-                    output += `OBJECTIVE:\n`;
-                    if (sentences.objective.length > 0) {
-                        output += sentences.objective.join(' ');
+                    // Natural Narrative Style - Use specific context if provided
+                    if (context && (context.topics || context.questions || context.actions || context.followUp)) {
+                        // Use the specific context provided by the user
+                        output += `OBJECTIVE:\n`;
+                        if (context.topics) {
+                            output += `${studentName} contacted regarding ${context.topics}.`;
+                        } else {
+                            output += `${studentName} reached out for assistance.`;
+                        }
+                        if (context.questions) {
+                            output += ` Student inquired about ${context.questions}.`;
+                        }
+                        output += `\n\n`;
+                        
+                        output += `WHAT TRANSPIRED:\n`;
+                        if (context.actions) {
+                            output += context.actions;
+                        } else {
+                            output += `Reviewed the ${poc.type === 'email' ? 'email' : 'communication'} and provided appropriate response.`;
+                        }
+                        if (context.additional) {
+                            output += ` ${context.additional}`;
+                        }
+                        output += `\n\n`;
+                        
+                        output += `OUTCOME/PLAN:\n`;
+                        if (context.followUp) {
+                            output += context.followUp;
+                        } else {
+                            output += `Response provided. Will monitor for any follow-up questions.`;
+                        }
+                        output += `\n`;
                     } else {
-                        output += `Received communication`;
+                        // Fall back to generic if no context provided
+                        const content = document.getElementById('universalInput').value;
+                        const sentences = extractFactualSentences(content);
+                        
+                        output += `OBJECTIVE:\n`;
+                        if (sentences.objective.length > 0) {
+                            output += sentences.objective.join(' ');
+                        } else {
+                            output += `Received communication from ${studentName}`;
+                        }
+                        
+                        if (analysisData.topics && analysisData.topics.length > 0) {
+                            output += ` regarding ${analysisData.topics.join(', ')}`;
+                        }
+                        output += `.\n\n`;
+                        
+                        output += `WHAT TRANSPIRED:\n`;
+                        output += `Reviewed the ${poc.type === 'email' ? 'email' : 'communication'}`;
+                        if (analysisData.questions > 0) {
+                            output += ` which contained ${analysisData.questions} question${analysisData.questions > 1 ? 's' : ''}`;
+                        }
+                        output += `. Provided response addressing the points raised.\n\n`;
+                        
+                        output += `OUTCOME/PLAN:\n`;
+                        output += `Responded to inquiry. `;
+                        if (analysisData.urgency > 0) {
+                            output += `Matter appeared time-sensitive. `;
+                        }
+                        output += `Will monitor for follow-up.\n`;
                     }
-                    
-                    if (analysisData.topics && analysisData.topics.length > 0) {
-                        output += ` regarding ${analysisData.topics.join(', ')}`;
-                    }
-                    output += `.\n\n`;
-                    
-                    output += `WHAT TRANSPIRED:\n`;
-                    output += `Reviewed the ${poc.type === 'email' ? 'email' : 'communication'}`;
-                    if (analysisData.questions > 0) {
-                        output += ` which contained ${analysisData.questions} question${analysisData.questions > 1 ? 's' : ''}`;
-                    }
-                    output += `. Provided response addressing the points raised.\n\n`;
-                    
-                    output += `OUTCOME/PLAN:\n`;
-                    output += `Responded to inquiry. `;
-                    if (analysisData.urgency > 0) {
-                        output += `Matter appeared time-sensitive. `;
-                    }
-                    output += `Will monitor for follow-up.\n`;
                 } else {
-                    // Bullet Point Style (existing)
+                    // Bullet Point Style - Use context if available
                     output += `OBJECTIVE:\n`;
-                    for (let i = 0; i < bulletCount; i++) {
-                        output += `• ${generateContextualBullet('objective', i)}\n`;
+                    if (context && context.topics) {
+                        const topicPoints = context.topics.split(/[,;]/).map(t => t.trim()).filter(t => t);
+                        topicPoints.slice(0, bulletCount).forEach(topic => {
+                            output += `• Addressed inquiry about ${topic}\n`;
+                        });
+                        // Fill remaining bullets if needed
+                        for (let i = topicPoints.length; i < bulletCount; i++) {
+                            output += `• ${generateContextualBullet('objective', i)}\n`;
+                        }
+                    } else {
+                        for (let i = 0; i < bulletCount; i++) {
+                            output += `• ${generateContextualBullet('objective', i)}\n`;
+                        }
                     }
                     
                     output += `\nWHAT TRANSPIRED:\n`;
-                    for (let i = 0; i < bulletCount; i++) {
-                        output += `• ${generateContextualBullet('transpired', i)}\n`;
+                    if (context && context.actions) {
+                        const actionPoints = context.actions.split(/[,;.]/).map(a => a.trim()).filter(a => a);
+                        actionPoints.slice(0, bulletCount).forEach(action => {
+                            output += `• ${action}\n`;
+                        });
+                        // Fill remaining bullets if needed
+                        for (let i = actionPoints.length; i < bulletCount; i++) {
+                            output += `• ${generateContextualBullet('transpired', i)}\n`;
+                        }
+                    } else {
+                        for (let i = 0; i < bulletCount; i++) {
+                            output += `• ${generateContextualBullet('transpired', i)}\n`;
+                        }
                     }
                     
                     output += `\nOUTCOME/PLAN:\n`;
-                    for (let i = 0; i < bulletCount; i++) {
-                        output += `• ${generateContextualBullet('outcome', i)}\n`;
+                    if (context && context.followUp) {
+                        const followUpPoints = context.followUp.split(/[,;.]/).map(f => f.trim()).filter(f => f);
+                        followUpPoints.slice(0, bulletCount).forEach(followUp => {
+                            output += `• ${followUp}\n`;
+                        });
+                        // Fill remaining bullets if needed
+                        for (let i = followUpPoints.length; i < bulletCount; i++) {
+                            output += `• ${generateContextualBullet('outcome', i)}\n`;
+                        }
+                    } else {
+                        for (let i = 0; i < bulletCount; i++) {
+                            output += `• ${generateContextualBullet('outcome', i)}\n`;
+                        }
                     }
                 }
                 
