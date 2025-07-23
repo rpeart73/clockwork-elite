@@ -1494,6 +1494,11 @@
                                 // Trigger analysis again
                                 handleInputChange({ target: universalInput });
                                 showStatus('Last date captured', 'success');
+                                
+                                // Update generation preview to show new POCs
+                                setTimeout(() => {
+                                    updateGenerationPreview();
+                                }, 500);
                             }
                         }, 1000);
                     }
@@ -2984,7 +2989,7 @@ Note: For more detailed content analysis, please copy and paste specific text se
                 // Show POC dates
                 const pocDatesDiv = document.getElementById('pocDates');
                 pocDatesDiv.innerHTML = detectedPOCs.map(poc => 
-                    `<div style="margin: 2px 0;">• ${poc}</div>`
+                    `<div style="margin: 2px 0;">• ${poc.dateStr}${poc.exchanges > 1 ? ` (${poc.exchanges} exchanges)` : ''}</div>`
                 ).join('');
                 
             } else if (contentType === 'document' || contentType === 'generic') {
