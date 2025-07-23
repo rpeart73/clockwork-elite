@@ -1641,102 +1641,43 @@
             // Detect multiple POCs from various indicators
             detectedPOCs = [];
             
-            // 1. Add POCs from specific dates mentioned
-            analysis.dates.forEach((date, index) => {
-                detectedPOCs.push({
-                    id: Date.now() + index,
-                    date: date.date,
-                    dateStr: date.formatted,
-                    type: 'email',
-                    context: date.context,
-                    content: content,
-                    selected: true
-                });
-            });
+            // Only create POCs from manually specified last date or very specific indicators
+            // Don't automatically create POCs from every date found in the email
             
-            // 2. Smart POC detection - only add if truly indicates separate contact
-            const followUpIndicators = {
-                strong: [
-                    /following up on our (call|meeting|discussion) from/i,
-                    /as we discussed (yesterday|last week|on \w+day)/i,
-                    /per our (\w+day) (conversation|meeting)/i
-                ],
-                medium: [
-                    /following up|follow-up/i,
-                    /as discussed/i,
-                    /thank you for meeting/i
-                ]
-            };
-            
-            let hasStrongIndicator = false;
-            followUpIndicators.strong.forEach(pattern => {
-                const match = content.match(pattern);
-                if (match && !hasStrongIndicator) {
-                    hasStrongIndicator = true;
-                    // Extract date if possible, otherwise estimate
-                    const dateMatch = match[0].match(/yesterday|last week|Monday|Tuesday|Wednesday|Thursday|Friday/i);
-                    let previousDate = new Date();
-                    
-                    if (dateMatch) {
-                        if (dateMatch[0].toLowerCase() === 'yesterday') {
-                            previousDate.setDate(previousDate.getDate() - 1);
-                        } else if (dateMatch[0].toLowerCase() === 'last week') {
-                            previousDate.setDate(previousDate.getDate() - 7);
-                        }
-                    } else {
-                        previousDate.setDate(previousDate.getDate() - 2);
-                    }
-                    
-                    detectedPOCs.push({
-                        id: Date.now() + 100,
-                        date: previousDate,
-                        dateStr: formatDate(previousDate),
-                        type: 'Previous ' + (match[0].includes('call') ? 'call' : 'meeting'),
-                        context: match[0],
-                        content: content,
-                        selected: true
-                    });
-                }
-            });
-            
-            // Only check medium indicators if no strong ones found and no dates already detected
-            if (!hasStrongIndicator && analysis.dates.length === 0) {
-                for (let pattern of followUpIndicators.medium) {
-                    if (content.match(pattern) && detectedPOCs.length === 0) {
-                        // Don't add extra POC, just note it's a follow-up
-                        // This will keep it as single POC
-                        break;
-                    }
-                }
-            }
-            
-            // 3. Check for meeting references
-            if (analysis.meetings.length > 0) {
-                analysis.meetings.forEach((meeting, index) => {
-                    detectedPOCs.push({
-                        id: Date.now() + 200 + index,
-                        date: meeting.date || new Date(),
-                        dateStr: formatDate(meeting.date || new Date()),
-                        type: 'meeting',
-                        context: meeting.context,
-                        content: content,
-                        selected: true
-                    });
-                });
-            }
-            
-            // 4. If still no POCs, create one for today
-            if (detectedPOCs.length === 0) {
+            // 1. Check for manually specified last date
+            const lastDatePOC = analysis.dates.find(d => d.isLastDate);
+            if (lastDatePOC) {
                 detectedPOCs.push({
                     id: Date.now(),
-                    date: new Date(),
-                    dateStr: formatDate(new Date()),
+                    date: lastDatePOC.date,
+                    dateStr: lastDatePOC.formatted,
                     type: 'email',
-                    context: 'Current email',
+                    context: lastDatePOC.context,
                     content: content,
                     selected: true
                 });
             }
+            
+            // 2. Add initial email date (today) if no other POCs
+            if (detectedPOCs.length === 0) {
+                const today = new Date();
+                detectedPOCs.push({
+                    id: Date.now(),
+                    date: today,
+                    dateStr: formatDate(today),
+                    type: 'email', 
+                    context: 'Initial email received',
+                    content: content,
+                    selected: true
+                });
+            }
+            
+            // Removed automatic follow-up detection to prevent unwanted POCs
+            // POCs are now only created from:
+            // 1. The manually specified last date
+            // 2. Today's date as the initial email (if no last date specified)
+            
+            // Removed automatic meeting detection to prevent unwanted POCs
             
             // Smart POC consolidation based on your rule:
             // Same day = 1 POC (multiple exchanges count as one)
