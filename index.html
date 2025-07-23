@@ -891,6 +891,11 @@
             color: white;
         }
         
+        .status-message.warning {
+            background: #f59e0b;
+            color: white;
+        }
+        
         /* Loading State */
         .loading-overlay {
             position: absolute;
@@ -1494,7 +1499,14 @@
                                 
                                 // Trigger analysis again
                                 handleInputChange({ target: universalInput });
-                                showStatus('Last date captured', 'success');
+                                
+                                // Show status with parsed date
+                                const testParse = parseDate(lastDate.trim());
+                                if (testParse) {
+                                    showStatus(`Last date captured: ${formatDate(testParse)}`, 'success');
+                                } else {
+                                    showStatus('Last date captured (but may need different format)', 'warning');
+                                }
                                 
                                 // Update generation preview to show new POCs
                                 setTimeout(() => {
@@ -1800,6 +1812,9 @@
                         context: `Last response: ${dateStr}`,
                         isLastDate: true
                     });
+                    console.log('Parsed last date:', dateStr, '→', formatDate(parsed));
+                } else {
+                    console.log('Failed to parse last date:', dateStr);
                 }
             }
             
