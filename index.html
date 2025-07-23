@@ -1641,23 +1641,39 @@
             // Detect multiple POCs from various indicators
             detectedPOCs = [];
             
-            // Create POCs from ALL dates found in the email
-            // This includes dates in the email content AND the manually entered last date
-            analysis.dates.forEach((date, index) => {
-                detectedPOCs.push({
-                    id: Date.now() + index,
-                    date: date.date,
-                    dateStr: date.formatted,
-                    type: 'email',
-                    context: date.context,
-                    content: content,
-                    selected: true,
-                    isLastDate: date.isLastDate || false
-                });
-            });
+            // Don't create POCs yet - wait for the last date to be entered
+            // Check if we have the last date marker
+            const hasLastDate = content.includes('[Last date in response:');
             
-            // If no dates found at all, create one for today
-            if (detectedPOCs.length === 0) {
+            if (hasLastDate) {
+                // Only NOW create POCs from all dates including the last date
+                analysis.dates.forEach((date, index) => {
+                    detectedPOCs.push({
+                        id: Date.now() + index,
+                        date: date.date,
+                        dateStr: date.formatted,
+                        type: 'email',
+                        context: date.context,
+                        content: content,
+                        selected: true,
+                        isLastDate: date.isLastDate || false
+                    });
+                });
+            } else {
+                // Just show we're waiting for the last date
+                detectedPOCs = [{
+                    id: Date.now(),
+                    date: new Date(),
+                    dateStr: 'Waiting for last date...',
+                    type: 'pending',
+                    context: 'Please wait for the last date prompt',
+                    content: content,
+                    selected: false
+                }];
+            }
+            
+            // If no dates found after last date is entered, create one for today
+            if (hasLastDate && detectedPOCs.length === 0) {
                 const today = new Date();
                 detectedPOCs.push({
                     id: Date.now(),
@@ -1670,41 +1686,44 @@
                 });
             }
             
-            // Smart POC consolidation based on your rule:
-            // Same day = 1 POC (multiple exchanges count as one)
-            // Different days = separate POCs
-            const pocsByDate = new Map();
-            
-            detectedPOCs.forEach(poc => {
-                const dateKey = poc.dateStr;
-                if (!pocsByDate.has(dateKey)) {
-                    pocsByDate.set(dateKey, {
-                        ...poc,
-                        exchanges: 1,
-                        combinedContext: [poc.context]
-                    });
-                } else {
-                    // Same date - combine into one POC
-                    const existing = pocsByDate.get(dateKey);
-                    existing.exchanges++;
-                    existing.combinedContext.push(poc.context);
-                    // Update type if more specific (meeting/call > email)
-                    if (poc.type !== 'email' && existing.type === 'email') {
-                        existing.type = poc.type;
+            // Only do POC consolidation if we have the last date
+            if (hasLastDate && detectedPOCs.length > 0 && detectedPOCs[0].type !== 'pending') {
+                // Smart POC consolidation based on your rule:
+                // Same day = 1 POC (multiple exchanges count as one)
+                // Different days = separate POCs
+                const pocsByDate = new Map();
+                
+                detectedPOCs.forEach(poc => {
+                    const dateKey = poc.dateStr;
+                    if (!pocsByDate.has(dateKey)) {
+                        pocsByDate.set(dateKey, {
+                            ...poc,
+                            exchanges: 1,
+                            combinedContext: [poc.context]
+                        });
+                    } else {
+                        // Same date - combine into one POC
+                        const existing = pocsByDate.get(dateKey);
+                        existing.exchanges++;
+                        existing.combinedContext.push(poc.context);
+                        // Update type if more specific (meeting/call > email)
+                        if (poc.type !== 'email' && existing.type === 'email') {
+                            existing.type = poc.type;
+                        }
                     }
-                }
-            });
-            
-            // Convert back to array
-            detectedPOCs = Array.from(pocsByDate.values()).map(poc => ({
-                ...poc,
-                context: poc.exchanges > 1 
-                    ? `${poc.exchanges} exchanges on this day: ${poc.combinedContext.join('; ')}` 
-                    : poc.context
-            }));
-            
-            // Sort by date
-            detectedPOCs.sort((a, b) => a.date - b.date);
+                });
+                
+                // Convert back to array
+                detectedPOCs = Array.from(pocsByDate.values()).map(poc => ({
+                    ...poc,
+                    context: poc.exchanges > 1 
+                        ? `${poc.exchanges} exchanges on this day: ${poc.combinedContext.join('; ')}` 
+                        : poc.context
+                }));
+                
+                // Sort by date
+                detectedPOCs.sort((a, b) => a.date - b.date);
+            }
             
             return analysis;
         }
@@ -1993,27 +2012,38 @@
             }
             
             if (detectedPOCs.length > 0) {
-                html += `<div class="detected-item">
-                    <div class="detected-icon">📅</div>
-                    <div class="detected-info">
-                        <div class="detected-label">Points of Contact Detected</div>
-                        <div class="detected-value">${detectedPOCs.length} POC${detectedPOCs.length > 1 ? 's' : ''}</div>
-                    </div>
-                </div>`;
-                
-                // Show each POC
-                detectedPOCs.forEach(poc => {
-                    const label = poc.exchanges > 1 
-                        ? `${poc.type} (${poc.exchanges} exchanges)` 
-                        : poc.type;
-                    html += `<div class="detected-item" style="margin-left: 20px; background: #e0e7ff;">
-                        <div class="detected-icon" style="font-size: 14px;">•</div>
+                // Check if we're in pending state
+                if (detectedPOCs[0].type === 'pending') {
+                    html += `<div class="detected-item">
+                        <div class="detected-icon">⏳</div>
                         <div class="detected-info">
-                            <div class="detected-label">${label}</div>
-                            <div class="detected-value">${poc.dateStr}</div>
+                            <div class="detected-label">Waiting for Last Date</div>
+                            <div class="detected-value">Will create POCs after you specify the last date</div>
                         </div>
                     </div>`;
-                });
+                } else {
+                    html += `<div class="detected-item">
+                        <div class="detected-icon">📅</div>
+                        <div class="detected-info">
+                            <div class="detected-label">Points of Contact Detected</div>
+                            <div class="detected-value">${detectedPOCs.length} POC${detectedPOCs.length > 1 ? 's' : ''}</div>
+                        </div>
+                    </div>`;
+                    
+                    // Show each POC
+                    detectedPOCs.forEach(poc => {
+                        const label = poc.exchanges > 1 
+                            ? `${poc.type} (${poc.exchanges} exchanges)` 
+                            : poc.type;
+                        html += `<div class="detected-item" style="margin-left: 20px; background: #e0e7ff;">
+                            <div class="detected-icon" style="font-size: 14px;">•</div>
+                            <div class="detected-info">
+                                <div class="detected-label">${label}</div>
+                                <div class="detected-value">${poc.dateStr}</div>
+                            </div>
+                        </div>`;
+                    });
+                }
             }
             
             if (analysis.topics.length > 0) {
