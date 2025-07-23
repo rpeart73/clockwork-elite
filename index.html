@@ -1787,6 +1787,22 @@
         // Extraction Functions
         function extractDates(content) {
             const dates = [];
+            
+            // First check for the special "Last date in response" format
+            const lastDateMatch = content.match(/\[Last date in response:\s*([^\]]+)\]/i);
+            if (lastDateMatch) {
+                const dateStr = lastDateMatch[1].trim();
+                const parsed = parseDate(dateStr);
+                if (parsed) {
+                    dates.push({
+                        date: parsed,
+                        formatted: formatDate(parsed),
+                        context: `Last response: ${dateStr}`,
+                        isLastDate: true
+                    });
+                }
+            }
+            
             const patterns = [
                 /(\w+\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})/gi,
                 /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/gi,
@@ -1800,13 +1816,16 @@
             patterns.forEach(pattern => {
                 const matches = content.matchAll(pattern);
                 for (let match of matches) {
-                    const parsed = parseDate(match[0]);
-                    if (parsed) {
-                        dates.push({
-                            date: parsed,
-                            formatted: formatDate(parsed),
-                            context: match[0]
-                        });
+                    // Skip if this is inside the [Last date in response: ] bracket
+                    if (!content.substring(match.index - 20, match.index).includes('[Last date in response:')) {
+                        const parsed = parseDate(match[0]);
+                        if (parsed) {
+                            dates.push({
+                                date: parsed,
+                                formatted: formatDate(parsed),
+                                context: match[0]
+                            });
+                        }
                     }
                 }
             });
