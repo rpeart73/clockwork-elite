@@ -1114,9 +1114,9 @@
                 <div class="input-section">
                     <div class="input-header">
                         <h2 class="input-title">Smart Input</h2>
-                        <div class="smart-mode-indicator">
+                        <div class="smart-mode-indicator" style="cursor: pointer;" onclick="toggleMode()">
                             <div class="smart-mode-dot"></div>
-                            <span>Auto-detect ON</span>
+                            <span id="modeText">Auto-detect ON</span>
                         </div>
                     </div>
                     
@@ -1899,6 +1899,11 @@
         
         // Content Type Detection
         function detectContentType(content) {
+            // Check manual mode first
+            if (currentMode === 'email') return 'email';
+            if (currentMode === 'task') return 'document';
+            
+            // Auto-detect mode
             const emailPatterns = [
                 /(?:hi|hello|dear)\s+(?:professor|dr\.|mr\.|ms\.)/i,
                 /(?:my name is|i am|i'm)\s+\w+/i,
@@ -2037,16 +2042,38 @@
                 });
             }
             
-            // Remove duplicates - keep the most specific POC for each date
-            const uniquePOCs = new Map();
+            // Smart POC consolidation based on your rule:
+            // Same day = 1 POC (multiple exchanges count as one)
+            // Different days = separate POCs
+            const pocsByDate = new Map();
+            
             detectedPOCs.forEach(poc => {
                 const dateKey = poc.dateStr;
-                if (!uniquePOCs.has(dateKey) || poc.type !== 'email') {
-                    // Prefer meeting/call over email for the same date
-                    uniquePOCs.set(dateKey, poc);
+                if (!pocsByDate.has(dateKey)) {
+                    pocsByDate.set(dateKey, {
+                        ...poc,
+                        exchanges: 1,
+                        combinedContext: [poc.context]
+                    });
+                } else {
+                    // Same date - combine into one POC
+                    const existing = pocsByDate.get(dateKey);
+                    existing.exchanges++;
+                    existing.combinedContext.push(poc.context);
+                    // Update type if more specific (meeting/call > email)
+                    if (poc.type !== 'email' && existing.type === 'email') {
+                        existing.type = poc.type;
+                    }
                 }
             });
-            detectedPOCs = Array.from(uniquePOCs.values());
+            
+            // Convert back to array
+            detectedPOCs = Array.from(pocsByDate.values()).map(poc => ({
+                ...poc,
+                context: poc.exchanges > 1 
+                    ? `${poc.exchanges} exchanges on this day: ${poc.combinedContext.join('; ')}` 
+                    : poc.context
+            }));
             
             // Sort by date
             detectedPOCs.sort((a, b) => a.date - b.date);
@@ -2308,10 +2335,13 @@
                 
                 // Show each POC
                 detectedPOCs.forEach(poc => {
+                    const label = poc.exchanges > 1 
+                        ? `${poc.type} (${poc.exchanges} exchanges)` 
+                        : poc.type;
                     html += `<div class="detected-item" style="margin-left: 20px; background: #e0e7ff;">
                         <div class="detected-icon" style="font-size: 14px;">•</div>
                         <div class="detected-info">
-                            <div class="detected-label">${poc.type}</div>
+                            <div class="detected-label">${label}</div>
                             <div class="detected-value">${poc.dateStr}</div>
                         </div>
                     </div>`;
@@ -3074,6 +3104,42 @@ Note: For more detailed content analysis, please copy and paste specific text se
             }
             // Reset the input so the same file can be selected again
             event.target.value = '';
+        }
+        
+        // Mode Toggle Function
+        function toggleMode() {
+            const modes = ['auto-detect', 'email', 'task'];
+            const currentIndex = modes.indexOf(currentMode);
+            const nextIndex = (currentIndex + 1) % modes.length;
+            currentMode = modes[nextIndex];
+            
+            const modeText = document.getElementById('modeText');
+            const indicator = document.querySelector('.smart-mode-indicator');
+            
+            // Update display
+            if (currentMode === 'auto-detect') {
+                modeText.textContent = 'Auto-detect ON';
+                indicator.style.background = '#f5f5f5';
+                indicator.style.borderColor = '#000000';
+                // Re-analyze content if any
+                if (document.getElementById('universalInput').value) {
+                    handleInputChange({ target: document.getElementById('universalInput') });
+                }
+            } else if (currentMode === 'email') {
+                modeText.textContent = 'Email Mode (Case Notes)';
+                indicator.style.background = '#e0e7ff';
+                indicator.style.borderColor = '#4338ca';
+                contentType = 'email';
+                updateUIForContentType('email');
+            } else if (currentMode === 'task') {
+                modeText.textContent = 'Task Mode';
+                indicator.style.background = '#fef3c7';
+                indicator.style.borderColor = '#f59e0b';
+                contentType = 'document';
+                updateUIForContentType('document');
+            }
+            
+            showStatus(`Switched to ${currentMode === 'auto-detect' ? 'auto-detect' : currentMode} mode`, 'info');
         }
         
         // Git Helper Functions removed - Claude handles all git operations
