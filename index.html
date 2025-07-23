@@ -1798,6 +1798,30 @@
             handleInputChange({ target: universalInput });
             
             showStatus('Screenshot data added', 'success');
+            
+            // Ask for the last date in the response
+            setTimeout(() => {
+                const lastDate = prompt(
+                    'What was the LAST date mentioned in the email/response?\n\n' +
+                    'For example:\n' +
+                    '- "Follow up by January 30"\n' +
+                    '- "Final deadline is 2/15"\n' +
+                    '- "Let me know by Friday"\n\n' +
+                    'Enter the last date:'
+                );
+                
+                if (lastDate && lastDate.trim()) {
+                    // Add the last date to the input
+                    const currentContent = universalInput.value;
+                    const lastDateNote = `\n[Last date in response: ${lastDate.trim()}]`;
+                    universalInput.value = currentContent + lastDateNote;
+                    
+                    // Trigger analysis again
+                    handleInputChange({ target: universalInput });
+                    
+                    showStatus('Last date captured', 'success');
+                }
+            }, 500);
         }
         
         function handleDragOver(event) {
