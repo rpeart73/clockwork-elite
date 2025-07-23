@@ -1480,10 +1480,11 @@
                             const lastDate = prompt(
                                 'What was the LAST date mentioned in the email/response?\n\n' +
                                 'For example:\n' +
-                                '- "Follow up by January 30"\n' +
-                                '- "Final deadline is 2/15"\n' +
-                                '- "Let me know by Friday"\n\n' +
-                                'Enter the last date (or cancel if none):'
+                                '- "January 30" or "Jan 30"\n' +
+                                '- "February 15" or "Feb 15" or "2/15"\n' +
+                                '- "Friday" or "next Monday"\n' +
+                                '- "30th" or "the 15th"\n\n' +
+                                'Enter the last date (any format is fine):'
                             );
                             
                             if (lastDate && lastDate.trim()) {
@@ -1789,7 +1790,11 @@
             const patterns = [
                 /(\w+\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})/gi,
                 /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/gi,
-                /\b(yesterday|today|tomorrow)\b/gi
+                /\b(yesterday|today|tomorrow)\b/gi,
+                /\b(\w+\s+\d{1,2}(?:st|nd|rd|th)?)\b/gi, // Month day without year
+                /\b(the\s+\d{1,2}(?:st|nd|rd|th)?)\b/gi, // "the 15th"
+                /\b(next\s+\w+day|last\s+\w+day)\b/gi, // "next Monday"
+                /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/gi // Day names
             ];
             
             patterns.forEach(pattern => {
@@ -2534,18 +2539,18 @@
                     }
                 }
                 
-                // Add email verbatim after divider
-                if (poc.content && contentType === 'email') {
-                    output += '\n\n' + '-'.repeat(80) + '\n';
-                    output += 'ORIGINAL EMAIL:\n\n';
-                    output += poc.content.trim();
-                    output += '\n' + '-'.repeat(80);
-                }
-                
                 if (index < detectedPOCs.length - 1) {
                     output += '\n\n' + '='.repeat(80) + '\n\n';
                 }
             });
+            
+            // Add email verbatim once at the end
+            if (contentType === 'email' && detectedPOCs.length > 0 && detectedPOCs[0].content) {
+                output += '\n\n' + '-'.repeat(80) + '\n';
+                output += 'ORIGINAL EMAIL:\n\n';
+                output += detectedPOCs[0].content.trim();
+                output += '\n' + '-'.repeat(80);
+            }
             
             return output;
         }
@@ -3060,19 +3065,112 @@ Note: For more detailed content analysis, please copy and paste specific text se
         
         function parseDate(dateStr) {
             const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth();
             
-            if (dateStr.toLowerCase() === 'today') return today;
-            if (dateStr.toLowerCase() === 'yesterday') {
+            // Handle relative dates
+            const lowerStr = dateStr.toLowerCase().trim();
+            if (lowerStr === 'today') return today;
+            if (lowerStr === 'yesterday') {
                 const yesterday = new Date(today);
                 yesterday.setDate(yesterday.getDate() - 1);
                 return yesterday;
             }
-            if (dateStr.toLowerCase() === 'tomorrow') {
+            if (lowerStr === 'tomorrow') {
                 const tomorrow = new Date(today);
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 return tomorrow;
             }
             
+            // Handle day names (Monday, Tuesday, etc.)
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const dayIndex = dayNames.indexOf(lowerStr);
+            if (dayIndex >= 0) {
+                const result = new Date(today);
+                const todayDay = today.getDay();
+                const daysToAdd = (dayIndex - todayDay + 7) % 7 || 7; // Next occurrence
+                result.setDate(today.getDate() + daysToAdd);
+                return result;
+            }
+            
+            // Handle "next Monday", "last Friday"
+            const nextLastMatch = dateStr.match(/^(next|last)\s+(\w+day)$/i);
+            if (nextLastMatch) {
+                const day = nextLastMatch[2].toLowerCase();
+                const dayIdx = dayNames.indexOf(day);
+                if (dayIdx >= 0) {
+                    const result = new Date(today);
+                    const todayDay = today.getDay();
+                    if (nextLastMatch[1].toLowerCase() === 'next') {
+                        const daysToAdd = (dayIdx - todayDay + 7) % 7 || 7;
+                        result.setDate(today.getDate() + daysToAdd);
+                    } else { // last
+                        const daysToSubtract = (todayDay - dayIdx + 7) % 7 || 7;
+                        result.setDate(today.getDate() - daysToSubtract);
+                    }
+                    return result;
+                }
+            }
+            
+            // Handle "the 15th", "the 3rd"
+            const ordinalMatch = dateStr.match(/^(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?$/i);
+            if (ordinalMatch) {
+                const day = parseInt(ordinalMatch[1]);
+                if (day >= 1 && day <= 31) {
+                    const result = new Date(currentYear, currentMonth, day);
+                    // If the day has already passed this month, assume next month
+                    if (result < today) {
+                        result.setMonth(result.getMonth() + 1);
+                    }
+                    return result;
+                }
+            }
+            
+            // Handle "January 15", "Jan 30", etc. without year
+            const monthDayMatch = dateStr.match(/^(\w+)\s+(\d{1,2})(?:st|nd|rd|th)?$/i);
+            if (monthDayMatch) {
+                const monthStr = monthDayMatch[1];
+                const day = parseInt(monthDayMatch[2]);
+                const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 
+                                   'july', 'august', 'september', 'october', 'november', 'december'];
+                const monthAbbr = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 
+                                  'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+                
+                let monthIndex = monthNames.indexOf(monthStr.toLowerCase());
+                if (monthIndex === -1) {
+                    monthIndex = monthAbbr.indexOf(monthStr.toLowerCase().substring(0, 3));
+                }
+                
+                if (monthIndex >= 0 && day >= 1 && day <= 31) {
+                    let year = currentYear;
+                    const result = new Date(year, monthIndex, day);
+                    
+                    // If the date has passed this year, assume next year
+                    if (result < today) {
+                        result.setFullYear(year + 1);
+                    }
+                    return result;
+                }
+            }
+            
+            // Handle MM/DD or MM-DD format (without year)
+            const monthDaySlashMatch = dateStr.match(/^(\d{1,2})[/-](\d{1,2})$/);
+            if (monthDaySlashMatch) {
+                const month = parseInt(monthDaySlashMatch[1]) - 1; // 0-indexed
+                const day = parseInt(monthDaySlashMatch[2]);
+                if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+                    let year = currentYear;
+                    const result = new Date(year, month, day);
+                    
+                    // If the date has passed this year, assume next year
+                    if (result < today) {
+                        result.setFullYear(year + 1);
+                    }
+                    return result;
+                }
+            }
+            
+            // Try standard date parsing as fallback
             const parsed = new Date(dateStr);
             return isNaN(parsed.getTime()) ? null : parsed;
         }
