@@ -229,23 +229,7 @@
             animation: processing-pulse 2s infinite;
         }
         
-        .input-wrapper.drag-over {
-            border-color: #000000;
-            border-width: 3px;
-            border-style: dashed;
-            background-color: #f3f4f6;
-        }
-        
-        .input-wrapper.drag-over::after {
-            content: 'Drop screenshot here...';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 18px;
-            font-weight: 600;
-            color: #10b981;
-        }
+        /* Removed drag-over styles */
         
         @keyframes processing-pulse {
             0%, 100% { border-color: #10b981; }
@@ -1125,24 +1109,13 @@
                         <div class="input-wrapper" id="inputWrapper">
                             <textarea 
                                 id="universalInput" 
-                                placeholder="Paste text, emails, or screenshots here (Ctrl+V)..."
+                                placeholder="Paste text or emails here (Ctrl+V)..."
                                 spellcheck="true"
                             ></textarea>
                         </div>
                     </div>
                     <div style="margin-top: 8px; font-size: 12px; color: #6b7280; text-align: center;">
-                        <strong>Screenshot Instructions:</strong><br>
-                        1. Take screenshot (Win+Shift+S or Mac: Cmd+Shift+4)<br>
-                        2. Click this box and press Ctrl+V (Cmd+V on Mac)<br>
-                        <button onclick="testPasteSupport()" style="margin-top: 5px; font-size: 11px; padding: 4px 8px; border: 1px solid #e5e7eb; background: white; border-radius: 4px; cursor: pointer;">Test Paste</button>
-                        <button onclick="document.getElementById('universalInput').focus()" style="margin-top: 5px; font-size: 11px; padding: 4px 8px; border: 1px solid #e5e7eb; background: white; border-radius: 4px; cursor: pointer;">Click to Focus</button>
-                        <br>
-                        <label style="margin-top: 5px; display: inline-block;">
-                            <input type="file" accept="image/*" onchange="handleFileSelect(event)" style="display: none;" id="screenshotFile">
-                            <button onclick="document.getElementById('screenshotFile').click()" style="margin-top: 5px; font-size: 11px; padding: 4px 8px; border: 1px solid #e5e7eb; background: white; border-radius: 4px; cursor: pointer;">
-                                Upload Screenshot
-                            </button>
-                        </label>
+                        Tip: Copy and paste emails to auto-detect student names, dates, and generate case notes
                     </div>
                     
                     
@@ -1486,52 +1459,50 @@
             // Universal input handling
             universalInput.addEventListener('input', debounce(handleInputChange, 300));
             
-            // Single paste handler for the entire document
-            document.addEventListener('paste', function(e) {
-                console.log('Paste event detected');
+            // Paste handler for text only
+            universalInput.addEventListener('paste', function(e) {
+                if (!e.clipboardData) return;
                 
-                if (!e.clipboardData || !e.clipboardData.items) {
-                    console.log('No clipboard data available');
-                    return;
-                }
-                
-                const items = Array.from(e.clipboardData.items);
-                console.log('Clipboard items:', items.length);
-                
-                // Look for images first
-                for (let item of items) {
-                    console.log('Item type:', item.type);
-                    if (item.type.startsWith('image/')) {
-                        e.preventDefault();
-                        const blob = item.getAsFile();
-                        if (blob) {
-                            console.log('Image found, processing...');
-                            handleScreenshot(blob);
-                            return;
-                        }
+                const text = e.clipboardData.getData('text/plain');
+                if (text) {
+                    e.preventDefault();
+                    const start = universalInput.selectionStart;
+                    const end = universalInput.selectionEnd;
+                    const currentValue = universalInput.value;
+                    universalInput.value = currentValue.substring(0, start) + text + currentValue.substring(end);
+                    universalInput.selectionStart = universalInput.selectionEnd = start + text.length;
+                    
+                    // Check if it's an email
+                    const emailPatterns = /@|from:|to:|subject:|re:|fw:/i;
+                    if (text.match(emailPatterns)) {
+                        // Ask for last date after a short delay
+                        setTimeout(() => {
+                            const lastDate = prompt(
+                                'What was the LAST date mentioned in the email/response?\n\n' +
+                                'For example:\n' +
+                                '- "Follow up by January 30"\n' +
+                                '- "Final deadline is 2/15"\n' +
+                                '- "Let me know by Friday"\n\n' +
+                                'Enter the last date (or cancel if none):'
+                            );
+                            
+                            if (lastDate && lastDate.trim()) {
+                                const currentContent = universalInput.value;
+                                const lastDateNote = `\n[Last date in response: ${lastDate.trim()}]`;
+                                universalInput.value = currentContent + lastDateNote;
+                                
+                                // Trigger analysis again
+                                handleInputChange({ target: universalInput });
+                                showStatus('Last date captured', 'success');
+                            }
+                        }, 1000);
                     }
-                }
-                
-                // If no image and we're in the textarea, handle text
-                if (e.target === universalInput) {
-                    const text = e.clipboardData.getData('text/plain');
-                    if (text) {
-                        e.preventDefault();
-                        const start = universalInput.selectionStart;
-                        const end = universalInput.selectionEnd;
-                        const currentValue = universalInput.value;
-                        universalInput.value = currentValue.substring(0, start) + text + currentValue.substring(end);
-                        universalInput.selectionStart = universalInput.selectionEnd = start + text.length;
-                        handleInputChange({ target: universalInput });
-                    }
+                    
+                    handleInputChange({ target: universalInput });
                 }
             });
             
-            // Drag and drop support for screenshots
-            const inputWrapper = document.getElementById('inputWrapper');
-            inputWrapper.addEventListener('dragover', handleDragOver);
-            inputWrapper.addEventListener('drop', handleDrop);
-            inputWrapper.addEventListener('dragleave', handleDragLeave);
+            // Removed drag and drop support
             
             
             // Generate button
@@ -1556,310 +1527,17 @@
             }
         }
         
-        // Removed handlePaste function - now handled in the single document paste listener
+        // Removed screenshot handling
         
-        async function handleScreenshot(blob) {
-            console.log('handleScreenshot called with blob:', blob);
-            showStatus('Processing screenshot...', 'info');
-            
-            try {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    console.log('FileReader loaded, showing modal');
-                    // Show extraction modal with screenshot preview
-                    showScreenshotExtractionModal(e.target.result);
-                };
-                reader.onerror = function(e) {
-                    console.error('FileReader error:', e);
-                    showStatus('Error reading screenshot', 'error');
-                };
-                reader.readAsDataURL(blob);
-                
-            } catch (error) {
-                console.error('Error processing screenshot:', error);
-                showStatus('Error processing screenshot', 'error');
-            }
-        }
+        // Removed screenshot handling functions
         
-        function showScreenshotExtractionModal(dataUrl) {
-            console.log('showScreenshotExtractionModal called');
-            
-            // Remove any existing modal
-            if (window.currentScreenshotModal) {
-                window.currentScreenshotModal.remove();
-            }
-            
-            // Create container
-            const container = document.createElement('div');
-            container.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
-                z-index: 10000;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            `;
-            
-            // Create modal
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-                max-width: 900px;
-                width: 90%;
-                max-height: 90vh;
-                overflow: hidden;
-                display: flex;
-                flex-direction: column;
-            `;
-            
-            // Header
-            const header = document.createElement('div');
-            header.style.cssText = 'padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;';
-            header.innerHTML = `
-                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Extract Email Information from Screenshot</h2>
-                <button onclick="closeScreenshotModal()" style="width: 32px; height: 32px; border: none; background: #f3f4f6; border-radius: 6px; cursor: pointer; font-size: 20px;">&times;</button>
-            `;
-            
-            // Content
-            const content = document.createElement('div');
-            content.style.cssText = 'padding: 24px; flex: 1; overflow-y: auto;';
-            
-            // Content layout
-            const layout = document.createElement('div');
-            layout.style.cssText = 'display: flex; gap: 20px; flex-wrap: wrap;';
-            
-            // Image side
-            const imageDiv = document.createElement('div');
-            imageDiv.style.cssText = 'flex: 1; min-width: 300px; max-width: 400px;';
-            const img = document.createElement('img');
-            img.src = dataUrl;
-            img.style.cssText = 'width: 100%; border: 1px solid #ddd; border-radius: 4px;';
-            imageDiv.appendChild(img);
-            
-            // Form side
-            const formDiv = document.createElement('div');
-            formDiv.style.cssText = 'flex: 1; min-width: 300px;';
-            
-            // Create form fields
-            const fields = [
-                { id: 'screenshotFrom', label: 'From (Sender)', type: 'input', placeholder: 'e.g., John Smith or john@example.com' },
-                { id: 'screenshotSubject', label: 'Subject', type: 'input', placeholder: 'e.g., Project Update' },
-                { id: 'screenshotDates', label: 'Dates Mentioned', type: 'input', placeholder: 'e.g., Meeting on 1/15, deadline 1/22', help: 'Include ALL dates: meetings, deadlines, follow-ups, etc.' },
-                { id: 'screenshotContent', label: 'Full Message Content', type: 'textarea', placeholder: 'Type or paste the complete email message here...' }
-            ];
-            
-            formDiv.innerHTML = '<p style="margin: 0 0 16px 0; color: #374151; font-weight: 500;">Fill in the information from your screenshot:</p>';
-            
-            fields.forEach(field => {
-                const fieldDiv = document.createElement('div');
-                fieldDiv.style.cssText = 'margin-bottom: 16px;';
-                
-                const label = document.createElement('label');
-                label.style.cssText = 'display: block; margin-bottom: 4px; font-weight: 600; color: #374151;';
-                label.textContent = field.label;
-                fieldDiv.appendChild(label);
-                
-                if (field.type === 'input') {
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.id = field.id;
-                    input.placeholder = field.placeholder;
-                    input.style.cssText = 'width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px;';
-                    fieldDiv.appendChild(input);
-                } else if (field.type === 'textarea') {
-                    const textarea = document.createElement('textarea');
-                    textarea.id = field.id;
-                    textarea.placeholder = field.placeholder;
-                    textarea.rows = 6;
-                    textarea.style.cssText = 'width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; resize: vertical;';
-                    fieldDiv.appendChild(textarea);
-                }
-                
-                if (field.help) {
-                    const help = document.createElement('div');
-                    help.style.cssText = 'font-size: 12px; color: #6b7280; margin-top: 4px;';
-                    help.textContent = field.help;
-                    fieldDiv.appendChild(help);
-                }
-                
-                formDiv.appendChild(fieldDiv);
-            });
-            
-            // Buttons
-            const buttonDiv = document.createElement('div');
-            buttonDiv.style.cssText = 'display: flex; gap: 8px; margin-top: 20px;';
-            
-            const addButton = document.createElement('button');
-            addButton.textContent = 'Add to Input';
-            addButton.style.cssText = 'flex: 1; padding: 10px 16px; background: #000; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;';
-            addButton.onclick = processScreenshotData;
-            
-            const cancelButton = document.createElement('button');
-            cancelButton.textContent = 'Cancel';
-            cancelButton.style.cssText = 'flex: 1; padding: 10px 16px; background: white; color: #374151; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: 500;';
-            cancelButton.onclick = closeScreenshotModal;
-            
-            buttonDiv.appendChild(addButton);
-            buttonDiv.appendChild(cancelButton);
-            formDiv.appendChild(buttonDiv);
-            
-            // Assemble
-            layout.appendChild(imageDiv);
-            layout.appendChild(formDiv);
-            content.appendChild(layout);
-            
-            modal.appendChild(header);
-            modal.appendChild(content);
-            container.appendChild(modal);
-            
-            // Add to page
-            document.body.appendChild(container);
-            window.currentScreenshotModal = container;
-            
-            // Focus first field
-            setTimeout(() => {
-                const firstField = document.getElementById('screenshotFrom');
-                if (firstField) {
-                    firstField.focus();
-                    console.log('Focused on first field');
-                }
-            }, 100);
-        }
+        // Removed screenshot modal functions
         
-        function closeScreenshotModal() {
-            if (window.currentScreenshotModal) {
-                window.currentScreenshotModal.remove();
-                window.currentScreenshotModal = null;
-            }
-        }
+        // Removed screenshot modal close function
         
-        function processScreenshotData() {
-            console.log('processScreenshotData called');
-            
-            const fromElement = document.getElementById('screenshotFrom');
-            const subjectElement = document.getElementById('screenshotSubject');
-            const datesElement = document.getElementById('screenshotDates');
-            const contentElement = document.getElementById('screenshotContent');
-            
-            console.log('Elements found:', {
-                from: !!fromElement,
-                subject: !!subjectElement,
-                dates: !!datesElement,
-                content: !!contentElement
-            });
-            
-            const from = fromElement ? fromElement.value.trim() : '';
-            const subject = subjectElement ? subjectElement.value.trim() : '';
-            const dates = datesElement ? datesElement.value.trim() : '';
-            const content = contentElement ? contentElement.value.trim() : '';
-            
-            console.log('Values:', { from, subject, dates, contentLength: content.length });
-            
-            // Validate - at least one field should have content
-            if (!from && !subject && !dates && !content) {
-                showStatus('Please enter at least some information from the screenshot', 'error');
-                const firstField = document.getElementById('screenshotFrom');
-                if (firstField) firstField.focus();
-                return;
-            }
-            
-            // Format the extracted data
-            let extractedText = '';
-            if (from) extractedText += `From: ${from}\n`;
-            if (subject) extractedText += `Subject: ${subject}\n`;
-            if (dates) extractedText += `Date(s): ${dates}\n`;
-            if (content) extractedText += `\n${content}`;
-            
-            // If only metadata without content, that's okay
-            if (!extractedText.trim()) {
-                extractedText = 'Screenshot data (no text extracted)';
-            }
-            
-            // Add to input
-            const universalInput = document.getElementById('universalInput');
-            const existingContent = universalInput.value;
-            
-            if (existingContent) {
-                universalInput.value = existingContent + '\n\n' + extractedText;
-            } else {
-                universalInput.value = extractedText;
-            }
-            
-            // Close modal
-            closeScreenshotModal();
-            
-            // Trigger content analysis
-            handleInputChange({ target: universalInput });
-            
-            showStatus('Screenshot data added', 'success');
-            
-            // Ask for the last date in the response
-            setTimeout(() => {
-                const lastDate = prompt(
-                    'What was the LAST date mentioned in the email/response?\n\n' +
-                    'For example:\n' +
-                    '- "Follow up by January 30"\n' +
-                    '- "Final deadline is 2/15"\n' +
-                    '- "Let me know by Friday"\n\n' +
-                    'Enter the last date:'
-                );
-                
-                if (lastDate && lastDate.trim()) {
-                    // Add the last date to the input
-                    const currentContent = universalInput.value;
-                    const lastDateNote = `\n[Last date in response: ${lastDate.trim()}]`;
-                    universalInput.value = currentContent + lastDateNote;
-                    
-                    // Trigger analysis again
-                    handleInputChange({ target: universalInput });
-                    
-                    showStatus('Last date captured', 'success');
-                }
-            }, 500);
-        }
+        // Removed screenshot data processing function
         
-        function handleDragOver(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            
-            const wrapper = document.getElementById('inputWrapper');
-            wrapper.classList.add('drag-over');
-            
-            // Change cursor to indicate drop is allowed
-            event.dataTransfer.dropEffect = 'copy';
-        }
-        
-        function handleDragLeave(event) {
-            event.preventDefault();
-            const wrapper = document.getElementById('inputWrapper');
-            wrapper.classList.remove('drag-over');
-        }
-        
-        function handleDrop(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            
-            const wrapper = document.getElementById('inputWrapper');
-            wrapper.classList.remove('drag-over');
-            
-            const files = event.dataTransfer.files;
-            
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                
-                // Check if it's an image
-                if (file.type.startsWith('image/')) {
-                    handleScreenshot(file);
-                    break; // Only handle first image
-                }
-            }
-        }
+        // Removed drag and drop handlers
         
         // Content Analysis
         async function analyzeContent(content) {
@@ -2787,25 +2465,7 @@
             return defaults[index % defaults.length];
         }
         
-        // File Handling
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.currentTarget.classList.add('dragover');
-        }
-        
-        function handleDragLeave(e) {
-            e.currentTarget.classList.remove('dragover');
-        }
-        
-        function handleDrop(e) {
-            e.preventDefault();
-            e.currentTarget.classList.remove('dragover');
-            handleFiles(e.dataTransfer.files);
-        }
-        
-        function handleFileSelect(e) {
-            handleFiles(e.target.files);
-        }
+        // Removed file handling functions
         
         function handleFiles(files) {
             if (files.length === 0) return;
@@ -3070,41 +2730,7 @@ Note: For more detailed content analysis, please copy and paste specific text se
             window.location.href = window.location.pathname + '?refresh=' + timestamp;
         }
         
-        // Test paste support
-        function testPasteSupport() {
-            // Test clipboard API support
-            if (!navigator.clipboard) {
-                alert('Clipboard API not supported in this browser.\n\nTry using HTTPS or a different browser.');
-                return;
-            }
-            
-            // Test paste permissions
-            navigator.permissions.query({name: 'clipboard-read'}).then(result => {
-                let message = 'Paste Support Test:\n\n';
-                message += '1. Clipboard API: ' + (navigator.clipboard ? 'Supported' : 'Not supported') + '\n';
-                message += '2. Clipboard Read Permission: ' + result.state + '\n';
-                message += '3. Browser: ' + navigator.userAgent.substring(0, 50) + '...\n';
-                message += '\nTo test paste:\n';
-                message += '1. Take a screenshot (Windows: Win+Shift+S, Mac: Cmd+Shift+4)\n';
-                message += '2. Press Ctrl+V (or Cmd+V on Mac) anywhere on this page\n';
-                message += '\nNote: Some browsers require HTTPS for clipboard access.';
-                
-                alert(message);
-            }).catch(err => {
-                alert('Paste Support Test:\n\nClipboard permissions cannot be checked.\nTry pasting anyway - it may still work!\n\nError: ' + err.message);
-            });
-        }
-        
-        // Handle file selection for screenshots
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file && file.type.startsWith('image/')) {
-                console.log('File selected:', file.name);
-                handleScreenshot(file);
-            }
-            // Reset the input so the same file can be selected again
-            event.target.value = '';
-        }
+        // Removed test paste support and file selection functions
         
         // Mode Toggle Function
         function toggleMode() {
