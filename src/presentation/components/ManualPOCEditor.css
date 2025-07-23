@@ -1,0 +1,314 @@
+/* Manual POC Editor Styles */
+
+.manual-poc-editor {
+  width: 100%;
+  height: calc(100vh - 120px);
+  background: var(--background-secondary);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.editor-layout {
+  display: flex;
+  height: 100%;
+}
+
+/* Left Panel - Email Content */
+.email-panel {
+  flex: 1;
+  background: var(--background-primary);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.email-panel h3 {
+  margin: 0;
+  padding: 16px 20px;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.email-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.email-content pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* Right Panel - Form */
+.form-panel {
+  flex: 1.2;
+  background: var(--background-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.form-header {
+  padding: 16px 20px;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.form-header h3 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.form-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.form-controls select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.quick-fill-toggle {
+  padding: 8px 16px;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.quick-fill-toggle:hover {
+  background: var(--accent-hover);
+}
+
+/* Form Body */
+.form-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.form-group.half {
+  flex: 1;
+}
+
+.form-group label {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Form Sections */
+.form-section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.form-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Quick Fills */
+.quick-fills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.quick-fills button {
+  padding: 6px 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-fills button:hover {
+  background: var(--accent-light);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+/* Form Actions */
+.form-actions {
+  padding: 20px;
+  background: var(--background-secondary);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.save-btn,
+.cancel-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-btn {
+  background: var(--success-color);
+  color: white;
+}
+
+.save-btn:hover {
+  background: var(--success-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cancel-btn {
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.cancel-btn:hover {
+  background: var(--background-tertiary);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .editor-layout {
+    flex-direction: column;
+  }
+  
+  .email-panel {
+    flex: none;
+    height: 40%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .form-panel {
+    flex: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+  }
+  
+  .form-controls {
+    flex-direction: column;
+  }
+  
+  .form-controls select {
+    width: 100%;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .manual-poc-editor {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .quick-fills button:hover {
+    background: rgba(74, 144, 226, 0.1);
+  }
+  
+  .save-btn {
+    background: #27ae60;
+  }
+  
+  .save-btn:hover {
+    background: #229954;
+  }
+}
+
+/* CSS Variables */
+:root {
+  --success-color: #27ae60;
+  --success-hover: #229954;
+  --accent-light: rgba(74, 144, 226, 0.1);
+  --border-light: rgba(0, 0, 0, 0.06);
+  --background-tertiary: #f8f9fa;
+}
+
+/* Dark mode variables */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --border-light: rgba(255, 255, 255, 0.06);
+    --background-tertiary: #1e1e1e;
+  }
+}

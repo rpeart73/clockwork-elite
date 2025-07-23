@@ -1,9 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppStore } from '@/store/app-store';
-// import { POCSelector } from '@/presentation/components/POCSelector';
+import { POCSelector } from '@/presentation/components/POCSelector';
+import { ManualPOCEditor, ManualPOC } from '@/presentation/components/ManualPOCEditor';
 import './MainPage.css';
 
 const MainPage: React.FC = () => {
+  const [showManualEditor, setShowManualEditor] = useState(false);
+  const [selectedDateForManual, setSelectedDateForManual] = useState<Date | null>(null);
+  const [_manualEditMode, setManualEditMode] = useState<'create' | 'edit'>('create');
+  
   const {
     universalInput,
     detectedPOCs,
@@ -33,7 +38,9 @@ const MainPage: React.FC = () => {
     setDistributionPattern,
     copyToClipboard,
     saveAsDraft,
-    resetAll
+    resetAll,
+    selectedPOCDates,
+    setSelectedPOCDates
   } = useAppStore();
 
   const handleGenerate = () => {
@@ -60,19 +67,43 @@ const MainPage: React.FC = () => {
             rows={10}
           />
           
-          {/* POC Detection */}
+          {/* POC Detection and Selection */}
           {detectedPOCs.length > 0 && (
-            <div className="poc-display">
-              <h3>Detected Points of Contact</h3>
-              <ul>
-                {detectedPOCs.map((poc, index) => (
-                  <li key={poc.id}>
-                    POC {index + 1}: {poc.dateStr} 
-                    {poc.exchanges && poc.exchanges > 1 && ` (${poc.exchanges} exchanges)`}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <>
+              <POCSelector 
+                detectedPOCs={detectedPOCs}
+                selectedDates={selectedPOCDates}
+                onSelectionChange={setSelectedPOCDates}
+              />
+              <div className="manual-poc-actions">
+                <button 
+                  className="btn-manual-edit"
+                  onClick={() => {
+                    if (selectedPOCDates.length > 0) {
+                      const firstDate = detectedPOCs.find(poc => poc.dateStr === selectedPOCDates[0]);
+                      if (firstDate) {
+                        setSelectedDateForManual(firstDate.date);
+                        setShowManualEditor(true);
+                        setManualEditMode('edit');
+                      }
+                    }
+                  }}
+                  disabled={selectedPOCDates.length === 0}
+                >
+                  Manually Edit Selected POC
+                </button>
+                <button 
+                  className="btn-manual-create"
+                  onClick={() => {
+                    setSelectedDateForManual(new Date());
+                    setShowManualEditor(true);
+                    setManualEditMode('create');
+                  }}
+                >
+                  Create Manual POC
+                </button>
+              </div>
+            </>
           )}
         </section>
 
@@ -190,6 +221,26 @@ const MainPage: React.FC = () => {
           <progress value={workflow.progress} max={100} />
         )}
       </footer>
+      
+      {/* Manual POC Editor Modal */}
+      {showManualEditor && selectedDateForManual && (
+        <div className="modal-overlay">
+          <div className="modal-content manual-poc-modal">
+            <ManualPOCEditor
+              selectedDate={selectedDateForManual}
+              emailContent={universalInput}
+              studentName={studentName}
+              onSave={(poc: ManualPOC) => {
+                // Handle saving the manual POC
+                console.log('Saving manual POC:', poc);
+                // TODO: Add to store and regenerate output
+                setShowManualEditor(false);
+              }}
+              onCancel={() => setShowManualEditor(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

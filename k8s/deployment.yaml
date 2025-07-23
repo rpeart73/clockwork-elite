@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clockwork-elite
+  namespace: default
+  labels:
+    app: clockwork-elite
+    version: v5.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: clockwork-elite
+  template:
+    metadata:
+      labels:
+        app: clockwork-elite
+        version: v5.0.0
+    spec:
+      containers:
+      - name: clockwork-elite
+        image: clockwork-elite:v5.0.0
+        ports:
+        - containerPort: 80
+          name: http
+        resources:
+          limits:
+            cpu: 500m
+            memory: 256Mi
+          requests:
+            cpu: 250m
+            memory: 128Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        env:
+        - name: NODE_ENV
+          value: "production"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 101
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clockwork-elite
+  namespace: default
+spec:
+  selector:
+    app: clockwork-elite
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+    name: http
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: clockwork-elite
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  tls:
+  - hosts:
+    - clockwork-elite.example.com
+    secretName: clockwork-elite-tls
+  rules:
+  - host: clockwork-elite.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: clockwork-elite
+            port:
+              number: 80
