@@ -732,6 +732,40 @@
             color: #4b5563;
         }
         
+        .btn-primary {
+            padding: 10px 16px;
+            background: #000000;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            background: #1f2937;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            padding: 10px 16px;
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+        }
+        
         .modal-body {
             padding: 24px;
             flex: 1;
@@ -1459,54 +1493,10 @@
             showStatus('Processing screenshot...', 'info');
             
             try {
-                // Create form data for OCR
-                const formData = new FormData();
-                formData.append('image', blob);
-                
-                // For now, show a message about screenshot support
-                // In a real implementation, this would call an OCR service
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    // Show preview of screenshot
-                    showScreenshotPreview(e.target.result);
-                    
-                    // Prompt user to extract email metadata
-                    setTimeout(() => {
-                        // Provide a template for easy filling
-                        const template = `From: [Enter sender's name/email]\n` +
-                                       `Subject: [Enter subject line]\n` +
-                                       `Dates: [Enter ALL dates/times mentioned - e.g., "Meeting on 1/15, follow-up 1/22"]\n` +
-                                       `\n` +
-                                       `[Paste or type the complete message below]\n`;
-                        
-                        const promptText = `Screenshot Email/Message Extraction\n\n` +
-                            `Copy and fill in this template with information from your screenshot:\n\n` +
-                            `${template}\n` +
-                            `IMPORTANT: Include ALL dates mentioned in the email (meetings, deadlines, follow-ups, etc.)\n` +
-                            `(Replace the bracketed text with actual information)`;
-                        
-                        const extractedInfo = prompt(promptText, template);
-                        
-                        if (extractedInfo && extractedInfo !== template) {
-                            const universalInput = document.getElementById('universalInput');
-                            const existingContent = universalInput.value;
-                            
-                            // Add the extracted content
-                            const timestamp = new Date().toLocaleString();
-                            const screenshotText = `\n\n--- Screenshot Email (captured ${timestamp}) ---\n` +
-                                                 `${extractedInfo}\n` +
-                                                 `--- End of Screenshot ---\n`;
-                            
-                            if (existingContent) {
-                                universalInput.value = existingContent + screenshotText;
-                            } else {
-                                universalInput.value = screenshotText.trim();
-                            }
-                            
-                            handleInputChange({ target: universalInput });
-                            showStatus('Email metadata extracted from screenshot', 'success');
-                        }
-                    }, 500);
+                    // Show extraction modal with screenshot preview
+                    showScreenshotExtractionModal(e.target.result);
                 };
                 reader.readAsDataURL(blob);
                 
@@ -1516,34 +1506,122 @@
             }
         }
         
-        function showScreenshotPreview(dataUrl) {
-            // Create a temporary preview modal
+        function showScreenshotExtractionModal(dataUrl) {
+            // Create modal overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay active';
+            
             const modal = document.createElement('div');
-            modal.className = 'screenshot-preview-modal';
-            modal.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: white;
-                padding: 20px;
-                border-radius: 8px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-                z-index: 10000;
-                max-width: 90%;
-                max-height: 90%;
-            `;
+            modal.className = 'modal screenshot-extraction-modal';
+            modal.style.maxWidth = '900px';
+            modal.style.maxHeight = '90vh';
+            modal.style.overflow = 'auto';
             
             modal.innerHTML = `
-                <h3 style="margin: 0 0 10px 0;">Screenshot Captured</h3>
-                <img src="${dataUrl}" style="max-width: 500px; max-height: 400px; border: 1px solid #ddd;">
-                <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">You'll be prompted to extract sender, subject, dates, and full message.</p>
+                <div class="modal-header">
+                    <h2 class="modal-title">Extract Email Information from Screenshot</h2>
+                    <button class="modal-close" onclick="closeScreenshotModal()">&times;</button>
+                </div>
+                <div class="modal-content" style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 300px; max-width: 400px;">
+                        <img src="${dataUrl}" style="width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="flex: 1; min-width: 300px;">
+                        <p style="margin: 0 0 16px 0; color: #374151; font-weight: 500;">Fill in the information from your screenshot:</p>
+                        
+                        <div class="form-field">
+                            <label class="form-label">From (Sender)</label>
+                            <input type="text" id="screenshotFrom" class="form-input" placeholder="e.g., John Smith or john@example.com">
+                        </div>
+                        
+                        <div class="form-field">
+                            <label class="form-label">Subject</label>
+                            <input type="text" id="screenshotSubject" class="form-input" placeholder="e.g., Project Update">
+                        </div>
+                        
+                        <div class="form-field">
+                            <label class="form-label">Dates Mentioned <span style="color: #ef4444;">*</span></label>
+                            <input type="text" id="screenshotDates" class="form-input" 
+                                placeholder="e.g., Meeting on 1/15, deadline 1/22, follow-up 1/29">
+                            <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                                Include ALL dates: meetings, deadlines, follow-ups, etc.
+                            </div>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label class="form-label">Full Message Content <span style="color: #ef4444;">*</span></label>
+                            <textarea id="screenshotContent" class="form-input" rows="8" 
+                                placeholder="Type or paste the complete email message here..."></textarea>
+                        </div>
+                        
+                        <div style="display: flex; gap: 8px; margin-top: 20px;">
+                            <button class="btn-primary" onclick="processScreenshotData()" style="flex: 1;">
+                                Add to Input
+                            </button>
+                            <button class="btn-secondary" onclick="closeScreenshotModal()" style="flex: 1;">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
             `;
             
-            document.body.appendChild(modal);
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
             
-            // Auto-remove after 3 seconds
-            setTimeout(() => modal.remove(), 3000);
+            // Store modal reference for closing
+            window.currentScreenshotModal = overlay;
+            
+            // Focus first input
+            setTimeout(() => {
+                const firstInput = document.getElementById('screenshotFrom');
+                if (firstInput) firstInput.focus();
+            }, 100);
+        }
+        
+        function closeScreenshotModal() {
+            if (window.currentScreenshotModal) {
+                window.currentScreenshotModal.remove();
+                window.currentScreenshotModal = null;
+            }
+        }
+        
+        function processScreenshotData() {
+            const from = document.getElementById('screenshotFrom').value.trim();
+            const subject = document.getElementById('screenshotSubject').value.trim();
+            const dates = document.getElementById('screenshotDates').value.trim();
+            const content = document.getElementById('screenshotContent').value.trim();
+            
+            // Validate required fields
+            if (!content) {
+                showStatus('Please enter the message content', 'error');
+                return;
+            }
+            
+            // Format the extracted data
+            let extractedText = '';
+            if (from) extractedText += `From: ${from}\n`;
+            if (subject) extractedText += `Subject: ${subject}\n`;
+            if (dates) extractedText += `Date(s): ${dates}\n`;
+            extractedText += `\n${content}`;
+            
+            // Add to input
+            const universalInput = document.getElementById('universalInput');
+            const existingContent = universalInput.value;
+            
+            if (existingContent) {
+                universalInput.value = existingContent + '\n\n' + extractedText;
+            } else {
+                universalInput.value = extractedText;
+            }
+            
+            // Close modal
+            closeScreenshotModal();
+            
+            // Trigger content analysis
+            handleInputChange({ target: universalInput });
+            
+            showStatus('Screenshot data extracted successfully', 'success');
         }
         
         function handleDragOver(event) {
