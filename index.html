@@ -1769,67 +1769,35 @@
                 }
             }
             
-            const patterns = [
-                // Full dates with year
-                /(\w+\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})/gi,
-                /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/gi,
-                
-                // Relative dates
-                /\b(yesterday|today|tomorrow)\b/gi,
-                
-                // Month and day patterns
-                /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?\b/gi,
-                /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+\d{1,2}(?:st|nd|rd|th)?\b/gi,
-                
-                // Day of month patterns with month names
-                /\b(?:the\s+)?(\d{1,2}(?:st|nd|rd|th))\s+(?:of\s+)?(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/gi,
-                
-                // Day names with context
-                /\b(?:next\s+|last\s+|this\s+)?(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/gi,
-                
-                // Special patterns
-                /\b(end\s+of\s+(?:the\s+)?(?:week|month))\b/gi,
-                /\b(beginning\s+of\s+(?:next\s+)?(?:week|month))\b/gi
+            // ONLY extract dates from email headers (From: Sent: lines)
+            // Look for patterns like "Sent: Monday, July 14, 2025" or "From: ... <email> Sent: ..."
+            const headerDatePatterns = [
+                /(?:Sent|Date):\s*(\w+,\s+\w+\s+\d{1,2},\s+\d{4})/gi,
+                /(?:Sent|Date):\s*(\w+\s+\d{1,2},\s+\d{4})/gi,
+                /(?:Sent|Date):\s*(\w+,\s+\d{1,2}[/-]\d{1,2}[/-]\d{4})/gi,
+                /(?:Sent|Date):\s*(\w+,\s+\w+\s+\d{1,2},\s+\d{4}\s+\d{1,2}:\d{2})/gi, // With time
+                /(?:On|From).*?(?:Sent|Date):\s*(\w+,\s+\w+\s+\d{1,2},\s+\d{4})/gi // Outlook format
             ];
             
             // Track unique dates to avoid duplicates
             const uniqueDates = new Set();
             
-            patterns.forEach(pattern => {
+            headerDatePatterns.forEach(pattern => {
                 const matches = content.matchAll(pattern);
                 for (let match of matches) {
-                    // Skip if this is inside the [Last date in response: ] bracket
-                    if (!content.substring(match.index - 20, match.index).includes('[Last date in response:')) {
-                        // Skip time patterns (10:00, 2:30, etc.)
-                        if (match[0].match(/^\d{1,2}:\d{2}/)) continue;
-                        
-                        // Skip standalone numbers that might be confused as dates
-                        if (match[0].match(/^(?:on\s+)?(?:the\s+)?(\d{1,2}(?:st|nd|rd|th)?)$/) && 
-                            !match[0].match(/\d{1,2}(?:st|nd|rd|th)/)) continue;
-                        
-                        const parsed = parseDate(match[0]);
-                        if (parsed) {
-                            // Additional validation - reject dates too far in the future
-                            const yearFromNow = new Date();
-                            yearFromNow.setFullYear(yearFromNow.getFullYear() + 1);
-                            
-                            // Reject dates more than a year in the future
-                            if (parsed > yearFromNow) {
-                                console.log('Rejected future date:', match[0], '→', formatDate(parsed));
-                                continue;
-                            }
-                            
-                            const dateKey = formatDate(parsed);
-                            // Only add if we haven't seen this date before
-                            if (!uniqueDates.has(dateKey)) {
-                                uniqueDates.add(dateKey);
-                                dates.push({
-                                    date: parsed,
-                                    formatted: dateKey,
-                                    context: match[0]
-                                });
-                                console.log('Added date:', match[0], '→', dateKey);
-                            }
+                    const dateStr = match[1];
+                    const parsed = parseDate(dateStr);
+                    if (parsed) {
+                        const dateKey = formatDate(parsed);
+                        // Only add if we haven't seen this date before
+                        if (!uniqueDates.has(dateKey)) {
+                            uniqueDates.add(dateKey);
+                            dates.push({
+                                date: parsed,
+                                formatted: dateKey,
+                                context: `Email header: ${dateStr}`
+                            });
+                            console.log('Added header date:', dateStr, '→', dateKey);
                         }
                     }
                 }
