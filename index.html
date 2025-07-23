@@ -1584,64 +1584,73 @@
         function showScreenshotExtractionModal(dataUrl) {
             console.log('showScreenshotExtractionModal called');
             
-            // Create modal overlay
-            const overlay = document.createElement('div');
-            overlay.className = 'modal-overlay active';
+            try {
+                // Remove any existing modal first
+                if (window.currentScreenshotModal) {
+                    window.currentScreenshotModal.remove();
+                }
+                
+                // Create modal overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'modal-overlay active';
+                
+                const modal = document.createElement('div');
+                modal.className = 'modal screenshot-extraction-modal';
+                modal.style.maxWidth = '900px';
+                modal.style.maxHeight = '90vh';
+                modal.style.overflow = 'auto';
+                modal.style.position = 'relative';
             
-            const modal = document.createElement('div');
-            modal.className = 'modal screenshot-extraction-modal';
-            modal.style.maxWidth = '900px';
-            modal.style.maxHeight = '90vh';
-            modal.style.overflow = 'auto';
-            
-            modal.innerHTML = `
+            const modalHTML = `
                 <div class="modal-header">
                     <h2 class="modal-title">Extract Email Information from Screenshot</h2>
                     <button class="modal-close" onclick="closeScreenshotModal()">&times;</button>
                 </div>
-                <div class="modal-content" style="display: flex; gap: 20px; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 300px; max-width: 400px;">
-                        <img src="${dataUrl}" style="width: 100%; border: 1px solid #ddd; border-radius: 4px;">
-                    </div>
-                    <div style="flex: 1; min-width: 300px;">
-                        <p style="margin: 0 0 16px 0; color: #374151; font-weight: 500;">Fill in the information from your screenshot:</p>
-                        
-                        <div class="form-field">
-                            <label class="form-label">From (Sender)</label>
-                            <input type="text" id="screenshotFrom" class="form-input" placeholder="e.g., John Smith or john@example.com">
+                <div class="modal-content">
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 300px; max-width: 400px;">
+                            <img src="${dataUrl}" style="width: 100%; border: 1px solid #ddd; border-radius: 4px;" alt="Screenshot">
                         </div>
-                        
-                        <div class="form-field">
-                            <label class="form-label">Subject</label>
-                            <input type="text" id="screenshotSubject" class="form-input" placeholder="e.g., Project Update">
-                        </div>
-                        
-                        <div class="form-field">
-                            <label class="form-label">Dates Mentioned</label>
-                            <input type="text" id="screenshotDates" class="form-input" 
-                                placeholder="e.g., Meeting on 1/15, deadline 1/22, follow-up 1/29">
-                            <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
-                                Include ALL dates: meetings, deadlines, follow-ups, etc.
+                        <div style="flex: 1; min-width: 300px;">
+                            <p style="margin: 0 0 16px 0; color: #374151; font-weight: 500;">Fill in the information from your screenshot:</p>
+                            
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; margin-bottom: 4px; font-weight: 600; color: #374151;">From (Sender)</label>
+                                <input type="text" id="screenshotFrom" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;" placeholder="e.g., John Smith or john@example.com">
                             </div>
-                        </div>
-                        
-                        <div class="form-field">
-                            <label class="form-label">Full Message Content</label>
-                            <textarea id="screenshotContent" class="form-input" rows="8" 
-                                placeholder="Type or paste the complete email message here..."></textarea>
-                        </div>
-                        
-                        <div style="display: flex; gap: 8px; margin-top: 20px;">
-                            <button class="btn-primary" onclick="processScreenshotData()" style="flex: 1;">
-                                Add to Input
-                            </button>
-                            <button class="btn-secondary" onclick="closeScreenshotModal()" style="flex: 1;">
-                                Cancel
-                            </button>
+                            
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; margin-bottom: 4px; font-weight: 600; color: #374151;">Subject</label>
+                                <input type="text" id="screenshotSubject" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;" placeholder="e.g., Project Update">
+                            </div>
+                            
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; margin-bottom: 4px; font-weight: 600; color: #374151;">Dates Mentioned</label>
+                                <input type="text" id="screenshotDates" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;" placeholder="e.g., Meeting on 1/15, deadline 1/22, follow-up 1/29">
+                                <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                                    Include ALL dates: meetings, deadlines, follow-ups, etc.
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; margin-bottom: 4px; font-weight: 600; color: #374151;">Full Message Content</label>
+                                <textarea id="screenshotContent" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px; min-height: 150px;" placeholder="Type or paste the complete email message here..."></textarea>
+                            </div>
+                            
+                            <div style="display: flex; gap: 8px; margin-top: 20px;">
+                                <button onclick="processScreenshotData()" style="flex: 1; padding: 10px 16px; background: #000; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                    Add to Input
+                                </button>
+                                <button onclick="closeScreenshotModal()" style="flex: 1; padding: 10px 16px; background: white; color: #374151; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;">
+                                    Cancel
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
+            
+            modal.innerHTML = modalHTML;
             
             overlay.appendChild(modal);
             document.body.appendChild(overlay);
@@ -1650,6 +1659,12 @@
             window.currentScreenshotModal = overlay;
             
             console.log('Modal added to DOM');
+            console.log('Modal content check:', {
+                hasFromField: !!document.getElementById('screenshotFrom'),
+                hasSubjectField: !!document.getElementById('screenshotSubject'),
+                hasDatesField: !!document.getElementById('screenshotDates'),
+                hasContentField: !!document.getElementById('screenshotContent')
+            });
             
             // Focus first input
             setTimeout(() => {
@@ -1657,8 +1672,15 @@
                 if (firstInput) {
                     firstInput.focus();
                     console.log('Focused on first input');
+                } else {
+                    console.log('Could not find first input field');
                 }
             }, 100);
+            
+            } catch (error) {
+                console.error('Error creating modal:', error);
+                showStatus('Error displaying screenshot modal', 'error');
+            }
         }
         
         function closeScreenshotModal() {
