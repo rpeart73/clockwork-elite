@@ -1781,9 +1781,8 @@
                 /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?\b/gi,
                 /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+\d{1,2}(?:st|nd|rd|th)?\b/gi,
                 
-                // Day of month patterns
+                // Day of month patterns with month names
                 /\b(?:the\s+)?(\d{1,2}(?:st|nd|rd|th))\s+(?:of\s+)?(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/gi,
-                /\b(?:on\s+)?(?:the\s+)?(\d{1,2}(?:st|nd|rd|th))\b/gi,
                 
                 // Day names with context
                 /\b(?:next\s+|last\s+|this\s+)?(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/gi,
@@ -1793,18 +1792,44 @@
                 /\b(beginning\s+of\s+(?:next\s+)?(?:week|month))\b/gi
             ];
             
+            // Track unique dates to avoid duplicates
+            const uniqueDates = new Set();
+            
             patterns.forEach(pattern => {
                 const matches = content.matchAll(pattern);
                 for (let match of matches) {
                     // Skip if this is inside the [Last date in response: ] bracket
                     if (!content.substring(match.index - 20, match.index).includes('[Last date in response:')) {
+                        // Skip time patterns (10:00, 2:30, etc.)
+                        if (match[0].match(/^\d{1,2}:\d{2}/)) continue;
+                        
+                        // Skip standalone numbers that might be confused as dates
+                        if (match[0].match(/^(?:on\s+)?(?:the\s+)?(\d{1,2}(?:st|nd|rd|th)?)$/) && 
+                            !match[0].match(/\d{1,2}(?:st|nd|rd|th)/)) continue;
+                        
                         const parsed = parseDate(match[0]);
                         if (parsed) {
-                            dates.push({
-                                date: parsed,
-                                formatted: formatDate(parsed),
-                                context: match[0]
-                            });
+                            // Additional validation - reject dates too far in the future
+                            const yearFromNow = new Date();
+                            yearFromNow.setFullYear(yearFromNow.getFullYear() + 1);
+                            
+                            // Reject dates more than a year in the future
+                            if (parsed > yearFromNow) {
+                                console.log('Rejected future date:', match[0], '→', formatDate(parsed));
+                                continue;
+                            }
+                            
+                            const dateKey = formatDate(parsed);
+                            // Only add if we haven't seen this date before
+                            if (!uniqueDates.has(dateKey)) {
+                                uniqueDates.add(dateKey);
+                                dates.push({
+                                    date: parsed,
+                                    formatted: dateKey,
+                                    context: match[0]
+                                });
+                                console.log('Added date:', match[0], '→', dateKey);
+                            }
                         }
                     }
                 }
@@ -3098,7 +3123,9 @@ Note: For more detailed content analysis, please copy and paste specific text se
             if (dayIndex >= 0) {
                 const result = new Date(today);
                 const todayDay = today.getDay();
-                const daysToAdd = (dayIndex - todayDay + 7) % 7 || 7; // Next occurrence
+                // If it's the same day, assume next week
+                let daysToAdd = dayIndex - todayDay;
+                if (daysToAdd <= 0) daysToAdd += 7;
                 result.setDate(today.getDate() + daysToAdd);
                 return result;
             }
