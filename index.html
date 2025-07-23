@@ -1641,24 +1641,22 @@
             // Detect multiple POCs from various indicators
             detectedPOCs = [];
             
-            // Only create POCs from manually specified last date or very specific indicators
-            // Don't automatically create POCs from every date found in the email
-            
-            // 1. Check for manually specified last date
-            const lastDatePOC = analysis.dates.find(d => d.isLastDate);
-            if (lastDatePOC) {
+            // Create POCs from ALL dates found in the email
+            // This includes dates in the email content AND the manually entered last date
+            analysis.dates.forEach((date, index) => {
                 detectedPOCs.push({
-                    id: Date.now(),
-                    date: lastDatePOC.date,
-                    dateStr: lastDatePOC.formatted,
+                    id: Date.now() + index,
+                    date: date.date,
+                    dateStr: date.formatted,
                     type: 'email',
-                    context: lastDatePOC.context,
+                    context: date.context,
                     content: content,
-                    selected: true
+                    selected: true,
+                    isLastDate: date.isLastDate || false
                 });
-            }
+            });
             
-            // 2. Add initial email date (today) if no other POCs
+            // If no dates found at all, create one for today
             if (detectedPOCs.length === 0) {
                 const today = new Date();
                 detectedPOCs.push({
@@ -1671,13 +1669,6 @@
                     selected: true
                 });
             }
-            
-            // Removed automatic follow-up detection to prevent unwanted POCs
-            // POCs are now only created from:
-            // 1. The manually specified last date
-            // 2. Today's date as the initial email (if no last date specified)
-            
-            // Removed automatic meeting detection to prevent unwanted POCs
             
             // Smart POC consolidation based on your rule:
             // Same day = 1 POC (multiple exchanges count as one)
@@ -1760,13 +1751,27 @@
             }
             
             const patterns = [
+                // Full dates with year
                 /(\w+\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})/gi,
                 /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/gi,
+                
+                // Relative dates
                 /\b(yesterday|today|tomorrow)\b/gi,
-                /\b(\w+\s+\d{1,2}(?:st|nd|rd|th)?)\b/gi, // Month day without year
-                /\b(the\s+\d{1,2}(?:st|nd|rd|th)?)\b/gi, // "the 15th"
-                /\b(next\s+\w+day|last\s+\w+day)\b/gi, // "next Monday"
-                /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/gi // Day names
+                
+                // Month and day patterns
+                /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?\b/gi,
+                /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+\d{1,2}(?:st|nd|rd|th)?\b/gi,
+                
+                // Day of month patterns
+                /\b(?:the\s+)?(\d{1,2}(?:st|nd|rd|th))\s+(?:of\s+)?(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/gi,
+                /\b(?:on\s+)?(?:the\s+)?(\d{1,2}(?:st|nd|rd|th))\b/gi,
+                
+                // Day names with context
+                /\b(?:next\s+|last\s+|this\s+)?(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/gi,
+                
+                // Special patterns
+                /\b(end\s+of\s+(?:the\s+)?(?:week|month))\b/gi,
+                /\b(beginning\s+of\s+(?:next\s+)?(?:week|month))\b/gi
             ];
             
             patterns.forEach(pattern => {
@@ -3143,6 +3148,34 @@ Note: For more detailed content analysis, please copy and paste specific text se
                     }
                     return result;
                 }
+            }
+            
+            // Handle "end of week/month"
+            if (dateStr.match(/end\s+of\s+(?:the\s+)?week/i)) {
+                const result = new Date(today);
+                const dayOfWeek = today.getDay();
+                const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7;
+                result.setDate(today.getDate() + daysUntilFriday);
+                return result;
+            }
+            
+            if (dateStr.match(/end\s+of\s+(?:the\s+)?month/i)) {
+                const result = new Date(currentYear, currentMonth + 1, 0); // Last day of current month
+                return result;
+            }
+            
+            // Handle "beginning of next week/month"
+            if (dateStr.match(/beginning\s+of\s+(?:next\s+)?week/i)) {
+                const result = new Date(today);
+                const dayOfWeek = today.getDay();
+                const daysUntilMonday = (8 - dayOfWeek) % 7 || 7;
+                result.setDate(today.getDate() + daysUntilMonday);
+                return result;
+            }
+            
+            if (dateStr.match(/beginning\s+of\s+(?:next\s+)?month/i)) {
+                const result = new Date(currentYear, currentMonth + 1, 1); // First day of next month
+                return result;
             }
             
             // Try standard date parsing as fallback
