@@ -264,9 +264,10 @@
             position: absolute;
             top: 16px;
             left: 16px;
-            color: #9ca3af;
+            color: #6b7280;
             pointer-events: none;
             transition: all 0.3s ease;
+            font-weight: 500;
         }
         
         .input-wrapper:focus-within .input-placeholder,
@@ -1389,6 +1390,16 @@
             universalInput.addEventListener('input', debounce(handleInputChange, 300));
             universalInput.addEventListener('paste', handlePaste);
             
+            // Global paste listener for screenshots anywhere on page
+            document.addEventListener('paste', function(e) {
+                // Only handle if not already in the input area
+                if (e.target !== universalInput) {
+                    handlePaste(e);
+                    // Focus the input area after paste
+                    universalInput.focus();
+                }
+            });
+            
             // Drag and drop support for screenshots
             const inputWrapper = document.getElementById('inputWrapper');
             inputWrapper.addEventListener('dragover', handleDragOver);
@@ -1464,13 +1475,14 @@
                         // Provide a template for easy filling
                         const template = `From: [Enter sender's name/email]\n` +
                                        `Subject: [Enter subject line]\n` +
-                                       `Date: [Enter date/time]\n` +
+                                       `Dates: [Enter ALL dates/times mentioned - e.g., "Meeting on 1/15, follow-up 1/22"]\n` +
                                        `\n` +
                                        `[Paste or type the complete message below]\n`;
                         
                         const promptText = `Screenshot Email/Message Extraction\n\n` +
                             `Copy and fill in this template with information from your screenshot:\n\n` +
                             `${template}\n` +
+                            `IMPORTANT: Include ALL dates mentioned in the email (meetings, deadlines, follow-ups, etc.)\n` +
                             `(Replace the bracketed text with actual information)`;
                         
                         const extractedInfo = prompt(promptText, template);
