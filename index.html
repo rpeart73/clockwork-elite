@@ -2952,9 +2952,17 @@ Note: For more detailed content analysis, please copy and paste specific text se
         
         // Cache Management
         function clearCache() {
-            if (confirm('Obliterate all cache? This will force a complete refresh.')) {
+            const message = 'Clear all browser cache and saved data?\n\n' +
+                          'This will:\n' +
+                          '• Remove all saved drafts and entries\n' +
+                          '• Clear browser cache to get latest updates\n' +
+                          '• Reset all preferences and settings\n' +
+                          '• Force reload with the newest version\n\n' +
+                          'Use this if you\'re not seeing recent updates.';
+                          
+            if (confirm(message)) {
                 // Complete cache obliteration
-                // 1. Clear all localStorage
+                // 1. Clear all localStorage (saved drafts, entries, preferences)
                 localStorage.clear();
                 
                 // 2. Clear all sessionStorage
@@ -2987,9 +2995,11 @@ Note: For more detailed content analysis, please copy and paste specific text se
                 // Reset application state
                 savedEntries = [];
                 workflowMemory = {};
+                detectedPOCs = [];
+                currentMode = 'auto-detect';
                 
                 // Show status and force reload
-                showStatus('Cache obliterated! Forcing refresh...', 'success');
+                showStatus('Cache cleared! Getting latest version...', 'success');
                 
                 // Force reload with cache bypass
                 setTimeout(() => {
@@ -3755,15 +3765,15 @@ Note: For more detailed content analysis, please copy and paste specific text se
         // Deployment Verification
         function verifyDeployment() {
             const expectedVersion = '4.2.3';
-            const lastUpdated = '2025-01-22';
+            const lastUpdated = '2025-01-23';
             const keyFeatures = [
                 { name: 'Version 4.2.3', check: () => document.querySelector('.version-badge')?.textContent === 'v4.2.3' },
-                { name: 'Confirm button exists', check: () => document.getElementById('confirmPreviewBtn') !== null },
-                { name: 'No Force Refresh function', check: () => typeof forceRefresh === 'undefined' },
-                { name: 'Work hours 8-4 PM', check: () => document.querySelector('option[value="early_morning"]')?.textContent.includes('8:00 AM') },
-                { name: 'Task count adjustment', check: () => typeof adjustTaskCount === 'function' },
-                { name: 'No emoji icons', check: () => !document.querySelector('.quick-action-btn')?.innerHTML.includes('💾') },
-                { name: 'Generate button (not Entry)', check: () => !document.body.innerHTML.includes('Generate Entry') || document.body.innerHTML.includes('Generate</button>') }
+                { name: 'Email header date extraction', check: () => document.body.innerHTML.includes('Email header:') },
+                { name: 'Wait for last date', check: () => document.body.innerHTML.includes('Waiting for Last Date') },
+                { name: 'Context gathering modal', check: () => typeof gatherEmailContext === 'function' },
+                { name: 'POC consolidation logic', check: () => document.body.innerHTML.includes('exchanges on this day') },
+                { name: 'Clear cache messaging', check: () => document.body.innerHTML.includes('Clear browser cache to get latest updates') },
+                { name: 'No auto POC creation', check: () => document.body.innerHTML.includes('hasLastDate') }
             ];
             
             let passed = 0;
