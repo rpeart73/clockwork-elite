@@ -1047,7 +1047,7 @@
                         </div>
                     </div>
                     <div style="margin-top: 8px; font-size: 12px; color: #6b7280; text-align: center;">
-                        Tip: Paste screenshots directly (Ctrl+V) or drag & drop image files
+                        Tip: Screenshot emails or messages and paste (Ctrl+V) - extracts sender, subject, dates & full text
                     </div>
                     
                     
@@ -1132,11 +1132,11 @@
                         <div class="form-field" id="distributionField" style="display: none;">
                             <label class="form-label" for="distributionPattern">Work Distribution Pattern</label>
                             <select id="distributionPattern" class="form-input" onchange="updateGenerationPreview()">
-                                <option value="equal" selected>⚖️ Equal Distribution</option>
+                                <option value="equal" selected>Equal Distribution</option>
                                 <option value="frontLoaded">Front-Loaded (More work early)</option>
                                 <option value="ascending">Ascending (Gradual increase)</option>
                                 <option value="descending">Descending (Gradual decrease)</option>
-                                <option value="backLoaded">📈 Back-Loaded (More work late)</option>
+                                <option value="backLoaded">Back-Loaded (More work late)</option>
                             </select>
                             <div style="margin-top: 4px; font-size: 12px; color: #6b7280;">
                                 How should work be distributed across the timeline?
@@ -1459,14 +1459,31 @@
                     // Show preview of screenshot
                     showScreenshotPreview(e.target.result);
                     
-                    // Prompt user to describe the screenshot content
+                    // Prompt user to extract email metadata
                     setTimeout(() => {
-                        const description = prompt('Please describe the content in this screenshot:\n\nWhat text or information should be extracted?');
-                        if (description) {
+                        // Provide a template for easy filling
+                        const template = `From: [Enter sender's name/email]\n` +
+                                       `Subject: [Enter subject line]\n` +
+                                       `Date: [Enter date/time]\n` +
+                                       `\n` +
+                                       `[Paste or type the complete message below]\n`;
+                        
+                        const promptText = `Screenshot Email/Message Extraction\n\n` +
+                            `Copy and fill in this template with information from your screenshot:\n\n` +
+                            `${template}\n` +
+                            `(Replace the bracketed text with actual information)`;
+                        
+                        const extractedInfo = prompt(promptText, template);
+                        
+                        if (extractedInfo && extractedInfo !== template) {
                             const universalInput = document.getElementById('universalInput');
                             const existingContent = universalInput.value;
                             
-                            const screenshotText = `\n\n[Screenshot Content]\n${description}\n`;
+                            // Add the extracted content
+                            const timestamp = new Date().toLocaleString();
+                            const screenshotText = `\n\n--- Screenshot Email (captured ${timestamp}) ---\n` +
+                                                 `${extractedInfo}\n` +
+                                                 `--- End of Screenshot ---\n`;
                             
                             if (existingContent) {
                                 universalInput.value = existingContent + screenshotText;
@@ -1475,7 +1492,7 @@
                             }
                             
                             handleInputChange({ target: universalInput });
-                            showStatus('Screenshot content added', 'success');
+                            showStatus('Email metadata extracted from screenshot', 'success');
                         }
                     }, 500);
                 };
@@ -1508,7 +1525,7 @@
             modal.innerHTML = `
                 <h3 style="margin: 0 0 10px 0;">Screenshot Captured</h3>
                 <img src="${dataUrl}" style="max-width: 500px; max-height: 400px; border: 1px solid #ddd;">
-                <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">You'll be prompted to describe the content next.</p>
+                <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">You'll be prompted to extract sender, subject, dates, and full message.</p>
             `;
             
             document.body.appendChild(modal);
@@ -2013,7 +2030,7 @@
             
             if (analysis.topics.length > 0) {
                 html += `<div class="detected-item">
-                    <div class="detected-icon">🏷️</div>
+                    <div class="detected-icon">▸</div>
                     <div class="detected-info">
                         <div class="detected-label">Topics</div>
                         <div class="detected-value">${analysis.topics.join(', ')}</div>
@@ -2859,7 +2876,7 @@ Note: For more detailed content analysis, please copy and paste specific text se
                             </div>
                             
                             <div style="background: #f3f4f6; padding: 16px; border-radius: 8px;">
-                                <strong>💡 Pro Tips:</strong>
+                                <strong>Pro Tips:</strong>
                                 <ul style="margin-top: 8px; line-height: 1.8;">
                                     <li>Include dates like "yesterday" or "Monday" for automatic POC detection</li>
                                     <li>Enter only days actually worked for accurate task distribution</li>
@@ -2971,7 +2988,7 @@ Note: For more detailed content analysis, please copy and paste specific text se
                 
                 // Update distribution pattern preview
                 const distributionSelect = document.getElementById('distributionPattern');
-                const distributionText = distributionSelect.options[distributionSelect.selectedIndex].text.replace('⚖️ ', '');
+                const distributionText = distributionSelect.options[distributionSelect.selectedIndex].text;
                 document.getElementById('distributionPreview').textContent = distributionText || 'Equal Distribution';
                 
                 // Update time of day preview
@@ -3340,14 +3357,14 @@ Note: For more detailed content analysis, please copy and paste specific text se
             
             if (passed === keyFeatures.length) {
                 report += '🎉 SUCCESS! You have the latest version.';
-                showStatus('✅ Latest version confirmed!', 'success');
+                showStatus('Latest version confirmed!', 'success');
             } else {
-                report += '⚠️ Some features are missing or outdated.\n\n';
+                report += 'Some features are missing or outdated.\n\n';
                 report += 'To fix this:\n';
                 report += '1. Click the "Clear Cache" button above\n';
                 report += '2. Or manually: Ctrl+F5 (Windows) / Cmd+Shift+R (Mac)\n';
                 report += '3. Or visit: ' + window.location.pathname + '?cachebust=' + Date.now();
-                showStatus('⚠️ Updates available - please clear cache', 'warning');
+                showStatus('Updates available - please clear cache', 'warning');
             }
             
             console.log(report);
