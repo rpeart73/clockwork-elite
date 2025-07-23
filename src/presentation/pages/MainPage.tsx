@@ -227,12 +227,37 @@ const MainPage: React.FC = () => {
               
               <label>Distribution Pattern</label>
               <select value={distributionPattern} onChange={(e) => setDistributionPattern(e.target.value as any)}>
-                <option value="equal">Equal Distribution</option>
-                <option value="frontLoaded">Front Loaded</option>
-                <option value="backLoaded">Back Loaded</option>
-                <option value="ascending">Ascending</option>
-                <option value="descending">Descending</option>
+                <option value="balanced">Balanced (Evenly Spaced)</option>
+                <option value="front-loaded">Front Loaded</option>
+                <option value="back-loaded">Back Loaded</option>
+                <option value="ascending">Ascending (Light to Heavy)</option>
+                <option value="descending">Descending (Heavy to Light)</option>
+                <option value="randomized">Randomized</option>
               </select>
+              
+              <label>Summary Detail Level</label>
+              <select className="summary-tier-select">
+                <option value="basic">Basic (3 high-level points)</option>
+                <option value="standard">Standard (5-7 points)</option>
+                <option value="enhanced">Enhanced (8+ detailed points)</option>
+              </select>
+              
+              <label>Work Hours</label>
+              <div className="work-hours-inputs">
+                <input
+                  type="time"
+                  defaultValue="08:00"
+                  className="time-input"
+                  title="Start Time"
+                />
+                <span>to</span>
+                <input
+                  type="time"
+                  defaultValue="16:00"
+                  className="time-input"
+                  title="End Time"
+                />
+              </div>
             </div>
           )}
         </section>

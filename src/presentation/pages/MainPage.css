@@ -230,6 +230,48 @@
   background: #333333;
 }
 
+/* Work Hours Inputs */
+.work-hours-inputs {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.time-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  transition: border-color 0.3s;
+}
+
+.time-input:focus {
+  outline: none;
+  border-color: #000000;
+}
+
+.work-hours-inputs span {
+  color: #666;
+  font-weight: 500;
+}
+
+.summary-tier-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  transition: border-color 0.3s;
+}
+
+.summary-tier-select:focus {
+  outline: none;
+  border-color: #000000;
+}
+
 /* Status Bar */
 .status-bar {
   background: #000000;

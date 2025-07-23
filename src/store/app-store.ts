@@ -1,9 +1,18 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { format } from 'date-fns';
+import { createJSONStorage, persist } from 'zustand/middleware';
+// import { format } from 'date-fns'; // Now handled by task-decomposition module
 import { DateExtractor } from '@/modules/date-extraction';
 import { POCConsolidator, PointOfContact } from '@/modules/poc-consolidation';
 import { generatePOCTemplate, formatPOCNote, applyProfessionalTone } from '@/modules/poc-documentation-guide';
+import { 
+  validateWorkDays, 
+  getBusinessDays, 
+  distributeWorkDays, 
+  generateTaskSummary, 
+  formatWorkLog, 
+  formatTaskSummary,
+  WorkloadBalanceStyle
+} from '@/modules/task-decomposition';
 import { InputSanitizer } from '@/modules/input-sanitization';
 // import { generateUniqueNotes } from '@/modules/simple-poc-fix'; // Replaced with POC Documentation Guide
 import { ManualPOC } from '@/presentation/components/ManualPOCEditor';
@@ -19,71 +28,63 @@ interface WorkflowState {
   message: string;
 }
 
-type AppStateData = {
-  // Content
+interface AppState {
+  // Input state
   universalInput: string;
-  contentType: 'email' | 'task' | 'auto-detect';
-  currentMode: 'auto-detect' | 'email' | 'task';
-  
-  // Email specific
   detectedPOCs: PointOfContact[];
   selectedPOCDates: string[];
-  hasLastDate: boolean;
   
-  // Form data
+  // Output state
+  generatedOutput: string;
+  workflow: WorkflowState;
+  
+  // Settings - General
+  currentMode: 'email' | 'task';
+  
+  // Settings - Email Mode
   studentName: string;
   serviceType: string;
   noteStyle: 'natural' | 'bullets' | 'concise';
   detailLevel: 'basic' | 'standard' | 'enhanced';
+  noteContext: string;
   language: 'canadian' | 'british';
   
-  // Task specific
+  // Settings - Task Mode
   startDate: string;
   endDate: string;
   totalDaysWorked: number;
-  distributionPattern: 'equal' | 'frontLoaded' | 'backLoaded' | 'ascending' | 'descending';
+  distributionPattern: string;
   timeOfDay: string;
   hoursPerDay: number;
   
-  // Workflow
-  workflow: WorkflowState;
-  
-  // Context for note generation
-  noteContext: {
-    topics: string;
-    questions: string;
-    actions: string;
-    followUp: string;
-    additional: string;
-  } | null;
-  
-  // Output
-  generatedOutput: string;
-  
-  // Draft
+  // Draft state
   lastSavedDraft: string;
-  draftTimestamp: string | null;
+  draftTimestamp: string;
   
   // Manual POCs
   manualPOCs: ManualPOC[];
-};
-
-type AppStateActions = {
+  
+  // Actions
   setUniversalInput: (input: string) => void;
-  setCurrentMode: (mode: 'auto-detect' | 'email' | 'task') => void;
-  analyzeContent: () => void;
   setStudentName: (name: string) => void;
-  setNoteContext: (context: AppStateData['noteContext']) => void;
-  generateEntries: () => Promise<string>;
-  generateOutput: () => string;
-  setServiceType: (serviceType: string) => void;
-  setNoteStyle: (noteStyle: 'natural' | 'bullets' | 'concise') => void;
-  setDetailLevel: (detailLevel: 'basic' | 'standard' | 'enhanced') => void;
-  setLanguage: (language: 'canadian' | 'british') => void;
-  setStartDate: (startDate: string) => void;
-  setEndDate: (endDate: string) => void;
-  setTotalDaysWorked: (totalDaysWorked: number) => void;
-  setDistributionPattern: (distributionPattern: 'equal' | 'frontLoaded' | 'backLoaded' | 'ascending' | 'descending') => void;
+  setServiceType: (type: string) => void;
+  setNoteStyle: (style: 'natural' | 'bullets' | 'concise') => void;
+  setDetailLevel: (level: 'basic' | 'standard' | 'enhanced') => void;
+  setNoteContext: (context: string) => void;
+  setLanguage: (lang: 'canadian' | 'british') => void;
+  setCurrentMode: (mode: 'email' | 'task') => void;
+  setStartDate: (date: string) => void;
+  setEndDate: (date: string) => void;
+  setTotalDaysWorked: (days: number) => void;
+  setDistributionPattern: (pattern: string) => void;
+  setTimeOfDay: (time: string) => void;
+  setHoursPerDay: (hours: number) => void;
+  
+  // Complex actions
+  analyzeContent: () => Promise<void>;
+  generateOutput: () => Promise<void>;
+  analyzeUniversalInput: (input: string) => void;
+  setDetectedPOCs: (pocs: PointOfContact[]) => void;
   setSelectedPOCDates: (dates: string[]) => void;
   copyToClipboard: () => Promise<void>;
   saveAsDraft: () => void;
@@ -94,184 +95,183 @@ type AppStateActions = {
   addManualPOC: (poc: ManualPOC) => void;
   updateManualPOC: (pocId: string, poc: ManualPOC) => void;
   deleteManualPOC: (pocId: string) => void;
-};
+}
 
-type AppState = AppStateData & AppStateActions;
-
-const initialState: AppStateData = {
+const initialState = {
   universalInput: '',
-  contentType: 'auto-detect',
-  currentMode: 'auto-detect',
   detectedPOCs: [],
   selectedPOCDates: [],
-  hasLastDate: false,
+  generatedOutput: '',
+  workflow: {
+    state: 'idle' as const,
+    progress: 0,
+    message: 'Ready'
+  },
+  currentMode: 'email' as const,
   studentName: '',
   serviceType: 'Email Support',
-  noteStyle: 'natural',
-  detailLevel: 'standard',
-  language: 'canadian',
-  startDate: new Date().toISOString().split('T')[0] as string,
-  endDate: new Date().toISOString().split('T')[0] as string,
-  totalDaysWorked: 0,
+  noteStyle: 'natural' as const,
+  detailLevel: 'standard' as const,
+  noteContext: '',
+  language: 'canadian' as const,
+  startDate: new Date().toISOString().split('T')[0] || '',
+  endDate: new Date().toISOString().split('T')[0] || '',
+  totalDaysWorked: 1,
   distributionPattern: 'equal',
-  timeOfDay: 'early_morning',
-  hoursPerDay: 5,
-  workflow: {
-    state: 'idle',
-    progress: 0,
-    message: 'Ready for input'
-  },
-  noteContext: null,
-  generatedOutput: '',
+  timeOfDay: 'morning',
+  hoursPerDay: 8,
   lastSavedDraft: '',
-  draftTimestamp: null,
+  draftTimestamp: '',
   manualPOCs: []
 };
 
-
 export const useAppStore = create<AppState>()(
-  persist<AppState>(
+  persist(
     (set, get) => ({
       ...initialState,
-
-      setUniversalInput: (input: string) => {
-        const sanitized = InputSanitizer.sanitizeEmailContent(input);
+      
+      // Simple setters
+      setUniversalInput: (universalInput) => set({ universalInput }),
+      setStudentName: (studentName) => set({ studentName }),
+      setServiceType: (serviceType) => set({ serviceType }),
+      setNoteStyle: (noteStyle) => set({ noteStyle }),
+      setDetailLevel: (detailLevel) => set({ detailLevel }),
+      setNoteContext: (noteContext) => set({ noteContext }),
+      setLanguage: (language) => set({ language }),
+      setCurrentMode: (currentMode) => set({ currentMode }),
+      setStartDate: (startDate) => set({ startDate }),
+      setEndDate: (endDate) => set({ endDate }),
+      setTotalDaysWorked: (totalDaysWorked) => set({ totalDaysWorked }),
+      setDistributionPattern: (distributionPattern) => set({ distributionPattern }),
+      setTimeOfDay: (timeOfDay) => set({ timeOfDay }),
+      setHoursPerDay: (hoursPerDay) => set({ hoursPerDay }),
+      
+      // Complex actions
+      analyzeContent: async () => {
         set({ 
-          universalInput: sanitized,
-          draftTimestamp: new Date().toISOString()
+          workflow: { 
+            state: 'analyzing', 
+            progress: 25, 
+            message: 'Analyzing content...' 
+          } 
         });
         
-        // Auto-analyze if content present
-        if (sanitized.trim()) {
-          get().analyzeContent();
-        }
-      },
-
-      setCurrentMode: (mode) => set({ currentMode: mode }),
-
-      analyzeContent: () => {
-        const { universalInput, currentMode } = get();
+        const state = get();
         
-        set({
-          workflow: {
-            state: 'analyzing',
-            progress: 30,
-            message: 'Analyzing content...'
-          }
-        });
-
-        // Detect content type
-        let contentType = currentMode;
-        if (currentMode === 'auto-detect') {
-          const detected = InputSanitizer.detectContentType(universalInput);
-          contentType = detected === 'unknown' ? 'task' : detected;
-        }
-
-        if (contentType === 'email') {
+        if (state.currentMode === 'email') {
+          // Email analysis
+          const { universalInput } = state;
+          
+          set({ 
+            workflow: { 
+              state: 'analyzing', 
+              progress: 50, 
+              message: 'Extracting dates...' 
+            } 
+          });
+          
+          // Sanitize input
+          const sanitized = InputSanitizer.sanitizeEmailContent(universalInput);
+          
           // Extract dates
-          const dates = DateExtractor.extractDates(universalInput);
-          const hasLastDate = DateExtractor.hasLastDateMarker(universalInput);
+          const dates = DateExtractor.extractDates(sanitized);
+          
+          set({ 
+            workflow: { 
+              state: 'analyzing', 
+              progress: 75, 
+              message: 'Consolidating POCs...' 
+            } 
+          });
+          
+          // Check if the last date might be incomplete
+          const hasLastDate = DateExtractor.hasLastDateMarker(sanitized);
           
           // Consolidate POCs
           const pocs = POCConsolidator.consolidate(dates, universalInput, hasLastDate);
           
-          // Extract student name from email
-          const senderMatch = universalInput.match(/From:\s*([^<\n]+)/i);
-          const studentName = senderMatch?.[1] ? 
-            InputSanitizer.sanitizeStudentName(senderMatch[1].trim().split(' ')[0] || '') : '';
-
-          set({
-            contentType: 'email',
+          set({ 
+            workflow: { 
+              state: 'ready', 
+              progress: 100, 
+              message: `Found ${pocs.length} POCs` 
+            },
             detectedPOCs: pocs,
-            hasLastDate,
-            studentName,
-            workflow: {
-              state: 'ready',
-              progress: 60,
-              message: 'Ready to generate'
-            }
+            // Auto-select all POCs by default
+            selectedPOCDates: pocs.map(poc => poc.dateStr)
           });
         } else {
-          set({
-            contentType: 'task',
-            workflow: {
-              state: 'ready',
-              progress: 60,
-              message: 'Ready to generate'
-            }
+          // Task analysis
+          set({ 
+            workflow: { 
+              state: 'ready', 
+              progress: 100, 
+              message: 'Ready to generate tasks' 
+            } 
           });
         }
       },
-
-      setStudentName: (name: string) => {
-        const sanitized = InputSanitizer.sanitizeStudentName(name);
-        set({ studentName: sanitized });
-      },
-
-      setNoteContext: (context) => set({ noteContext: context }),
-
-      generateEntries: async () => {
-        const state = get();
+      
+      generateOutput: async () => {
+        set({ 
+          workflow: { 
+            state: 'generating', 
+            progress: 0, 
+            message: 'Generating output...' 
+          } 
+        });
         
-        set({
-          workflow: {
-            state: 'generating',
-            progress: 80,
-            message: 'Generating entries...'
-          }
-        });
-
-        let output = '';
-
-        if (state.contentType === 'email') {
-          output = generateCaseNotes(state);
-        } else {
-          output = generateTasks(state);
-        }
-
-        set({
-          workflow: {
-            state: 'complete',
-            progress: 100,
-            message: 'Generation complete'
-          }
-        });
-
-        return output;
-      },
-
-      generateOutput: () => {
         const state = get();
         let output = '';
-
-        if (state.contentType === 'email') {
-          output = generateCaseNotes(state);
-        } else if (state.currentMode === 'task') {
-          output = generateTasks(state);
+        
+        try {
+          if (state.currentMode === 'email') {
+            output = generateCaseNotes(state);
+          } else {
+            output = generateTasks(state);
+          }
+          
+          set({ 
+            generatedOutput: output,
+            workflow: { 
+              state: 'complete', 
+              progress: 100, 
+              message: 'Generation complete!' 
+            }
+          });
+        } catch (error) {
+          set({
+            workflow: {
+              state: 'idle',
+              progress: 0,
+              message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+            }
+          });
         }
-
-        set({ generatedOutput: output });
-        return output;
       },
-
-      setServiceType: (serviceType: string) => set({ serviceType }),
-      setNoteStyle: (noteStyle: 'natural' | 'bullets' | 'concise') => set({ noteStyle }),
-      setDetailLevel: (detailLevel: 'basic' | 'standard' | 'enhanced') => set({ detailLevel }),
-      setLanguage: (language: 'canadian' | 'british') => set({ language }),
-      setStartDate: (startDate: string) => set({ startDate }),
-      setEndDate: (endDate: string) => set({ endDate }),
-      setTotalDaysWorked: (totalDaysWorked: number) => set({ totalDaysWorked }),
-      setDistributionPattern: (distributionPattern: 'equal' | 'frontLoaded' | 'backLoaded' | 'ascending' | 'descending') => set({ distributionPattern }),
-      setSelectedPOCDates: (selectedPOCDates: string[]) => set({ selectedPOCDates }),
+      
+      analyzeUniversalInput: (input: string) => {
+        const sanitized = InputSanitizer.sanitizeEmailContent(input);
+        const dates = DateExtractor.extractDates(sanitized);
+        const hasLastDate = DateExtractor.hasLastDateMarker(sanitized);
+        const pocs = POCConsolidator.consolidate(dates, input, hasLastDate);
+        
+        set({ 
+          detectedPOCs: pocs,
+          selectedPOCDates: pocs.map(poc => poc.dateStr)
+        });
+      },
+      
+      setDetectedPOCs: (detectedPOCs) => set({ detectedPOCs }),
+      setSelectedPOCDates: (selectedPOCDates) => set({ selectedPOCDates }),
       
       copyToClipboard: async () => {
-        const state = get();
-        if (state.generatedOutput) {
-          await navigator.clipboard.writeText(state.generatedOutput);
+        const { generatedOutput } = get();
+        if (generatedOutput) {
+          await navigator.clipboard.writeText(generatedOutput);
           set({
             workflow: {
-              state: 'complete',
-              progress: 100,
+              ...get().workflow,
               message: 'Copied to clipboard!'
             }
           });
@@ -426,151 +426,57 @@ function generateCaseNotes(state: AppState): string {
     });
   }
 
-  return output;
-}
-
-function generateTasks(state: AppState): string {
-  const { 
-    startDate, 
-    endDate, 
-    totalDaysWorked, 
-    distributionPattern,
-    timeOfDay,
-    hoursPerDay,
-    universalInput,
-    detailLevel
-  } = state;
-
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  let output = '';
-  let currentDate = new Date(start);
-  let daysGenerated = 0;
-
-  // Extract task context from input
-  const taskContext = extractTaskContext(universalInput);
-
-  while (daysGenerated < totalDaysWorked && currentDate <= end) {
-    // Skip weekends
-    if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
-      const dateStr = format(currentDate, 'MMMM d, yyyy');
-      const hours = calculateHoursForDay(daysGenerated, totalDaysWorked, hoursPerDay, distributionPattern);
-      const timeRange = getTimeRange(timeOfDay, hours);
-      
-      output += `${dateStr} | ${timeRange} | ${hours} hours | ${taskContext.title} | ${taskContext.category}\n`;
-      
-      // Add bullets based on detail level
-      const bulletCount = detailLevel === 'basic' ? 3 : detailLevel === 'enhanced' ? 7 : 5;
-      const bullets = generateTaskBullets(taskContext, bulletCount);
-      bullets.forEach(bullet => {
-        output += `• ${bullet}\n`;
-      });
-      
-      output += '\n';
-      daysGenerated++;
-    }
-    
-    currentDate.setDate(currentDate.getDate() + 1);
+  // Email verbatim at the end if single POC
+  if (totalPOCs === 1 && universalInput) {
+    output += '\n\n**Email Verbatim:**\n';
+    output += '```\n' + universalInput + '\n```';
   }
 
   return output.trim();
 }
 
-function extractTaskContext(input: string) {
-  const defaultContext = {
-    title: 'Project Development',
-    category: 'Development',
-    activities: [
-      'Analyzed requirements and specifications',
-      'Implemented features according to design',
-      'Conducted code review and testing',
-      'Updated documentation'
-    ]
+function generateTasks(state: AppState): string {
+  // Use new task decomposition system
+  const config = {
+    startDate: state.startDate,
+    endDate: state.endDate,
+    totalDaysWorked: state.totalDaysWorked,
+    balanceStyle: mapDistributionPattern(state.distributionPattern)
   };
-
-  if (!input) return defaultContext;
-
-  // Extract project name
-  const projectMatch = input.match(/project[:\s]+([^\n]+)/i);
-  if (projectMatch && projectMatch[1]) {
-    defaultContext.title = projectMatch[1].trim();
+  
+  // Validate workdays
+  const validation = validateWorkDays(config);
+  if (!validation.isValid) {
+    return `ERROR: ${validation.error}`;
   }
-
-  // Extract activities
-  const activities: string[] = [];
-  const actionWords = ['developed', 'created', 'implemented', 'designed', 'analyzed', 'reviewed'];
-  actionWords.forEach(word => {
-    const pattern = new RegExp(`${word}\\s+([^.]+)`, 'gi');
-    const matches = input.matchAll(pattern);
-    for (const match of matches) {
-      activities.push(match[0]);
-    }
-  });
-
-  if (activities.length > 0) {
-    defaultContext.activities = activities;
-  }
-
-  return defaultContext;
+  
+  // Get business days and distribute work
+  const businessDays = getBusinessDays(config.startDate, config.endDate);
+  const workDays = distributeWorkDays(config, businessDays);
+  
+  // Generate work log
+  let output = formatWorkLog(workDays, config.balanceStyle || 'balanced');
+  
+  // Generate task summary (default to standard tier)
+  const summary = generateTaskSummary('standard', state.universalInput);
+  output += '\n\n' + formatTaskSummary(summary);
+  
+  return output;
 }
 
-function calculateHoursForDay(
-  dayIndex: number, 
-  totalDays: number, 
-  baseHours: number, 
-  pattern: string
-): number {
-  switch (pattern) {
-    case 'frontLoaded':
-      return dayIndex < totalDays / 2 ? baseHours + 1 : baseHours - 1;
-    case 'backLoaded':
-      return dayIndex >= totalDays / 2 ? baseHours + 1 : baseHours - 1;
-    case 'ascending':
-      return Math.min(baseHours + dayIndex * 0.5, 8);
-    case 'descending':
-      return Math.max(baseHours - dayIndex * 0.5, 1);
-    default:
-      return baseHours;
-  }
-}
-
-function getTimeRange(timeOfDay: string, hours: number): string {
-  const timeRanges = {
-    'early_morning': { start: 6, name: '6:00 AM' },
-    'morning': { start: 8, name: '8:00 AM' },
-    'midday': { start: 11, name: '11:00 AM' },
-    'afternoon': { start: 13, name: '1:00 PM' },
-    'late_afternoon': { start: 16, name: '4:00 PM' },
-    'evening': { start: 18, name: '6:00 PM' }
+function mapDistributionPattern(pattern: string): WorkloadBalanceStyle {
+  const mapping: { [key: string]: WorkloadBalanceStyle } = {
+    'equal': 'balanced',
+    'frontLoaded': 'front-loaded',
+    'backLoaded': 'back-loaded',
+    'ascending': 'ascending',
+    'descending': 'descending',
+    'balanced': 'balanced',
+    'front-loaded': 'front-loaded',
+    'back-loaded': 'back-loaded',
+    'randomized': 'randomized'
   };
-
-  const range = timeRanges[timeOfDay as keyof typeof timeRanges] || timeRanges.morning;
-  const endHour = range.start + hours;
-  const endTime = endHour > 12 ? `${endHour - 12}:00 PM` : `${endHour}:00 AM`;
-  
-  return `${range.name} - ${endTime}`;
+  return mapping[pattern] || 'balanced';
 }
 
-function generateTaskBullets(context: any, count: number): string[] {
-  const bullets = [];
-  const available = [...context.activities];
-  
-  // Use real activities first
-  for (let i = 0; i < Math.min(count, available.length); i++) {
-    bullets.push(available[i]);
-  }
-  
-  // Fill with generic if needed
-  const generic = [
-    'Coordinated with team members on deliverables',
-    'Ensured quality standards were met',
-    'Documented progress and outcomes',
-    'Prepared for upcoming milestones'
-  ];
-  
-  while (bullets.length < count) {
-    bullets.push(generic[bullets.length % generic.length]);
-  }
-  
-  return bullets.slice(0, count);
-}
+// Legacy functions removed - now using task-decomposition module
